@@ -5,6 +5,7 @@
 //! events (`gen:start`, `gen:delta`, `gen:done`, `note:done`, `gen:error`,
 //! `ledger:updated`). Every mutation is persisted as it happens (autosave).
 
+use std::path::PathBuf;
 use std::sync::MutexGuard;
 use std::time::{Duration, Instant};
 
@@ -17,6 +18,7 @@ use uuid::Uuid;
 use crate::anthropic::{self, MessagesRequest};
 use crate::auth;
 use crate::db;
+use crate::documents;
 use crate::error::CmdError;
 use crate::markdown;
 use crate::models::*;
@@ -74,6 +76,9 @@ pub struct NoteGenStarted {
 pub struct ImportedFile {
     pub name: String,
     pub content: String,
+    /// Set when this particular file couldn't be read; the rest of a batch
+    /// still comes through.
+    pub error: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -1154,29 +1159,61 @@ pub async fn export_topic_markdown(
 }
 
 #[tauri::command]
-pub async fn import_text_file() -> Result<Option<ImportedFile>, CmdError> {
-    let picked = tauri::async_runtime::spawn_blocking(|| {
+pub async fn import_documents() -> Result<Vec<ImportedFile>, CmdError> {
+    let all: Vec<&str> = documents::TEXT_EXTS
+        .iter()
+        .chain(documents::DOC_EXTS.iter())
+        .copied()
+        .collect();
+
+    let picked = tauri::async_runtime::spawn_blocking(move || {
         rfd::FileDialog::new()
-            .set_title("Import text as topic context")
-            .add_filter("Text", &["md", "markdown", "txt", "text"])
-            .pick_file()
+            .set_title("Attach documents as topic context")
+            .add_filter("Documents", &all)
+            .add_filter("PDF", documents::DOC_EXTS)
+            .add_filter("All files", &["*"])
+            .pick_files()
     })
     .await
     .map_err(|e| CmdError::new("io", e.to_string()))?;
 
-    match picked {
-        Some(p) => {
-            let content = std::fs::read_to_string(&p).map_err(|_| {
-                CmdError::new("invalid", "That file isn't plain text (UTF-8).")
-            })?;
-            let name = p
-                .file_name()
-                .map(|s| s.to_string_lossy().into_owned())
-                .unwrap_or_default();
-            Ok(Some(ImportedFile { name, content }))
-        }
-        None => Ok(None),
+    read_paths(picked.unwrap_or_default()).await
+}
+
+/// Reads files dropped onto the window. Unreadable ones are reported rather
+/// than failing the whole drop, so one bad file in a batch isn't fatal.
+#[tauri::command]
+pub async fn read_dropped_files(paths: Vec<String>) -> Result<Vec<ImportedFile>, CmdError> {
+    read_paths(paths.into_iter().map(PathBuf::from).collect()).await
+}
+
+async fn read_paths(paths: Vec<PathBuf>) -> Result<Vec<ImportedFile>, CmdError> {
+    if paths.is_empty() {
+        return Ok(Vec::new());
     }
+    tauri::async_runtime::spawn_blocking(move || {
+        paths
+            .into_iter()
+            .filter(|p| p.is_file())
+            .map(|p| {
+                let name = documents::display_name(&p);
+                match documents::extract(&p) {
+                    Ok(content) => ImportedFile {
+                        name,
+                        content,
+                        error: None,
+                    },
+                    Err(e) => ImportedFile {
+                        name,
+                        content: String::new(),
+                        error: Some(e.message),
+                    },
+                }
+            })
+            .collect()
+    })
+    .await
+    .map_err(|e| CmdError::new("io", e.to_string()))
 }
 
 // ------------------------------------------------------- backup/restore --

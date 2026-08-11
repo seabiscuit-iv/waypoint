@@ -11,7 +11,10 @@ use crate::models::{Settings, SideNoteMessage, SpineStep};
 /// Full spine steps included verbatim in context; older ones are represented
 /// only by the concept ledger.
 const MAX_HISTORY_STEPS: usize = 24;
-const MAX_SEED_CHARS: usize = 8000;
+/// Seed context can now be whole attached documents, so this is sized for a
+/// paper rather than a pasted abstract. Kept in sync with SEED_BUDGET_CHARS
+/// in ui/js/views/topics.js, which warns before the trim happens.
+const MAX_SEED_CHARS: usize = 24000;
 const MAX_EXCERPT_CHARS: usize = 6000;
 
 /// Cheap model used for concept-ledger extraction and the key-test ping.

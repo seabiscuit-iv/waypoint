@@ -114,6 +114,7 @@ const ICONS = {
   pencil: '<path d="M12.9 3.1a1.6 1.6 0 0 1 2.3 2.3l-8.6 8.6-3.1.8.8-3.1 8.6-8.6Z"/>',
   refresh: '<path d="M14 8a6 6 0 1 1-1.7-4.2M14 2.5V6h-3.5"/>',
   copy: '<rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M3 10.5V3.8A1.3 1.3 0 0 1 4.3 2.5H11"/>',
+  doc: '<path d="M9 1.5H4.5A1.5 1.5 0 0 0 3 3v10a1.5 1.5 0 0 0 1.5 1.5h7A1.5 1.5 0 0 0 13 13V5.5L9 1.5Z"/><path d="M9 1.5V5.5H13"/>',
   dots: '<circle cx="3.2" cy="8" r="1.3" fill="currentColor" stroke="none"/><circle cx="8" cy="8" r="1.3" fill="currentColor" stroke="none"/><circle cx="12.8" cy="8" r="1.3" fill="currentColor" stroke="none"/>',
   chat: '<path d="M3 3.5h10a1 1 0 0 1 1 1V10a1 1 0 0 1-1 1H8l-3 2.8V11H3a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z"/>',
   check: '<path d="M3 8.5 6.5 12 13 4.5"/>',

@@ -3,7 +3,7 @@
 // export.
 
 import { qs, el, icon, fmtCost, fmtTokens, toast, toastErr, showMenu, openModal, promptModal, autoGrow } from '../util.js';
-import { api } from '../api.js';
+import { api, onEventScoped } from '../api.js';
 import { state, findStep, findNote } from '../state.js';
 import { selectTopic, refreshTopicList, switchView } from '../nav.js';
 import * as spine from '../spine.js';
@@ -166,6 +166,50 @@ export async function exportCurrent() {
 
 // ------------------------------------------------------------- new topic
 
+// Mirrors MAX_SEED_CHARS in prompts.rs — anything past this is trimmed off
+// before the seed reaches the model, so the modal says so up front.
+const SEED_BUDGET_CHARS = 24000;
+
+/** Free-text notes first, then each document under its own filename header. */
+function buildSeed(typedNotes, attached) {
+  const parts = [];
+  const typed = typedNotes.trim();
+  if (typed) parts.push(typed);
+  for (const f of attached) {
+    parts.push(`--- ${f.name} ---\n${f.content.trim()}`);
+  }
+  return parts.join('\n\n');
+}
+
+/**
+ * Accepts files dropped anywhere on the window while the dialog is open —
+ * the modal is the only interactive surface, and matching the drop position
+ * against the zone's rect would mean converting physical to logical pixels.
+ * Returns a function that detaches the listeners.
+ */
+function listenForDrop(zone, onFiles) {
+  const pending = [
+    onEventScoped('tauri://drag-enter', () => zone.classList.add('dragging')),
+    onEventScoped('tauri://drag-leave', () => zone.classList.remove('dragging')),
+    onEventScoped('tauri://drag-drop', async (payload) => {
+      zone.classList.remove('dragging');
+      const paths = payload?.paths ?? [];
+      if (paths.length === 0) return;
+      try {
+        onFiles(await api.readDroppedFiles(paths));
+      } catch (e) { toastErr(e); }
+    }),
+  ];
+  let detached = false;
+  for (const p of pending) {
+    p.then((un) => { if (detached) un(); }).catch(() => {});
+  }
+  return () => {
+    detached = true;
+    for (const p of pending) p.then((un) => un()).catch(() => {});
+  };
+}
+
 export function openNewTopicModal() {
   if (!state.auth.configured) return;
 
@@ -180,23 +224,72 @@ export function openNewTopicModal() {
   });
   seedTa.addEventListener('input', () => autoGrow(seedTa));
 
-  const importNote = el('span', { class: 'sub', text: '' });
+  const attached = [];
+  const fileList = el('div', { class: 'attach-list' });
+  const budgetNote = el('div', { class: 'attach-budget' });
+
+  const seedLength = () => buildSeed(seedTa.value, attached).length;
+
+  const renderAttachments = () => {
+    fileList.textContent = '';
+    for (const f of attached) {
+      fileList.append(el('div', { class: 'attach-item' },
+        el('span', { class: 'ai-icon', html: icon('doc') }),
+        el('span', { class: 'ai-name', text: f.name, title: f.name }),
+        el('span', { class: 'ai-size', text: `${f.content.length.toLocaleString()} chars` }),
+        el('button', {
+          class: 'icon-btn sm', title: 'Remove',
+          onclick: () => {
+            attached.splice(attached.indexOf(f), 1);
+            renderAttachments();
+          },
+        }, el('span', { html: icon('close') }))));
+    }
+    const total = seedLength();
+    if (total === 0) {
+      budgetNote.textContent = '';
+    } else if (total > SEED_BUDGET_CHARS) {
+      budgetNote.className = 'attach-budget over';
+      budgetNote.textContent =
+        `${total.toLocaleString()} chars — only the first ${SEED_BUDGET_CHARS.toLocaleString()} are sent to the model. Trim it, or attach the most relevant sections.`;
+    } else {
+      budgetNote.className = 'attach-budget';
+      budgetNote.textContent = `${total.toLocaleString()} chars of context`;
+    }
+  };
+
+  const addFiles = (files) => {
+    for (const f of files) {
+      if (f.error) {
+        toast(`${f.name}: ${f.error}`, { error: true });
+        continue;
+      }
+      if (attached.some((a) => a.name === f.name && a.content === f.content)) continue;
+      attached.push(f);
+    }
+    renderAttachments();
+  };
+
   const importBtn = el('button', {
-    class: 'btn btn-ghost btn-sm', text: 'Import from file…',
+    class: 'btn btn-ghost btn-sm', text: 'Attach documents…',
     onclick: async () => {
       try {
-        const file = await api.importTextFile();
-        if (file) {
-          seedTa.value = file.content;
-          autoGrow(seedTa);
-          importNote.textContent = `Imported ${file.name} (${file.content.length.toLocaleString()} chars)`;
-        }
+        addFiles(await api.importDocuments());
       } catch (e) { toastErr(e); }
     },
   });
 
+  seedTa.addEventListener('input', renderAttachments);
+
   const createBtn = el('button', { class: 'btn btn-primary', text: 'Create topic' });
   const cancelBtn = el('button', { class: 'btn btn-ghost', text: 'Cancel' });
+
+  const dropZone = el('div', { class: 'attach-zone' },
+    el('div', { class: 'attach-head' },
+      importBtn,
+      el('span', { class: 'attach-hint', text: 'or drop files here' })),
+    fileList,
+    budgetNote);
 
   const body = el('div', {},
     el('div', { class: 'field' },
@@ -206,11 +299,16 @@ export function openNewTopicModal() {
     el('div', { class: 'field' },
       el('label', { text: 'Seed context (optional)' }),
       seedTa,
-      el('div', { class: 'field-row', style: 'margin-top:8px; justify-content:space-between' },
-        importBtn, importNote)));
+      el('div', { class: 'sub', text: 'PDF, Word, Markdown, plain text and source files. The first steps are grounded in whatever you add.' }),
+      dropZone));
 
-  const m = openModal({ title: 'New topic', body, foot: [cancelBtn, createBtn] });
+  let stopDrop = () => {};
+  const m = openModal({
+    title: 'New topic', body, foot: [cancelBtn, createBtn],
+    onClose: () => stopDrop(),
+  });
   cancelBtn.onclick = () => m.close();
+  stopDrop = listenForDrop(dropZone, addFiles);
 
   const submit = async () => {
     const title = titleInput.value.trim();
@@ -220,7 +318,7 @@ export function openNewTopicModal() {
     }
     createBtn.disabled = true;
     try {
-      const summary = await api.createTopic(title, seedTa.value.trim() || null);
+      const summary = await api.createTopic(title, buildSeed(seedTa.value, attached) || null);
       m.close();
       await refreshTopicList();
       await selectTopic(summary.id);

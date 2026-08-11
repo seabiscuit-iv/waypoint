@@ -43,11 +43,17 @@ export const api = {
 
   // data
   exportTopicMarkdown: (topicId) => invoke('export_topic_markdown', { topicId }),
-  importTextFile: () => invoke('import_text_file'),
+  importDocuments: () => invoke('import_documents'),
+  readDroppedFiles: (paths) => invoke('read_dropped_files', { paths }),
   backupDatabase: () => invoke('backup_database'),
   restoreDatabase: () => invoke('restore_database'),
 };
 
 export function onEvent(name, handler) {
   listen(name, (event) => handler(event.payload));
+}
+
+/** Like onEvent, but resolves to an unlisten function for temporary listeners. */
+export function onEventScoped(name, handler) {
+  return listen(name, (event) => handler(event.payload));
 }

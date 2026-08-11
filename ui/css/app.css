@@ -1541,6 +1541,64 @@ math mtext { font-family: var(--font-content); }
   margin-bottom: 6px;
 }
 .field input, .field textarea { width: 100%; }
+
+/* ------------------------------------------------- document attachments */
+
+.attach-zone {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.attach-zone.dragging {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* Deliberately not reusing .sub here: it carries a top margin that flexbox
+   includes when centring, and matching its specificity from this block is a
+   coin-flip on source order. */
+.attach-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.attach-hint {
+  font-size: 11.5px;
+  color: var(--ink-3);
+  line-height: 1;
+  margin: 0;
+}
+
+.attach-list { display: flex; flex-direction: column; gap: 5px; }
+.attach-list:not(:empty) { margin-top: 10px; }
+
+.attach-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: 12.5px;
+}
+.attach-item .ai-icon { display: flex; color: var(--accent); }
+.attach-item .ai-icon svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; }
+.attach-item .ai-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.attach-item .ai-size { color: var(--ink-3); font-size: 11.5px; flex: none; }
+
+.attach-budget {
+  font-size: 11.5px;
+  color: var(--ink-3);
+  line-height: 1.45;
+  margin: 0;
+}
+.attach-budget:not(:empty) { margin-top: 8px; }
+.attach-budget.over { color: var(--danger); }
 .field .sub { font-size: 11.5px; color: var(--ink-3); margin-top: 5px; line-height: 1.45; }
 .field-row { display: flex; gap: 8px; align-items: center; }
 .field-row input { flex: 1; }
