@@ -171,6 +171,9 @@ textarea { resize: none; line-height: 1.5; }
   flex: none;
 }
 .ic.dim { color: var(--ink-3); }
+/* 24-unit viewBox scales down more than the 20-unit default — thicken the
+   stroke so it reads at the same weight as its neighbours. */
+.ic.ic-24 { stroke-width: 1.95; }
 
 kbd {
   font-family: var(--font-ui);
@@ -246,7 +249,11 @@ kbd {
 .app-shell {
   display: grid;
   grid-template-columns: var(--sidebar-w) 1fr;
+  /* minmax(0,1fr), not auto: an auto row grows to its content's full height,
+     so the inner scroll containers never get a bounded height to scroll in. */
+  grid-template-rows: minmax(0, 1fr);
   height: 100vh;
+  overflow: hidden;
 }
 
 /* ----------------------------------------------------------- sidebar */
@@ -257,6 +264,7 @@ kbd {
   background: var(--bg-deep);
   border-right: 1px solid var(--border);
   min-width: 0;
+  min-height: 0;
 }
 
 .sidebar-head { padding: 14px 12px 10px; }
@@ -374,6 +382,7 @@ kbd {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0; /* defeat the grid item's automatic minimum size */
   position: relative;
 }
 
@@ -522,13 +531,14 @@ kbd {
   position: relative;
 }
 
-.spine-view { flex: 1; min-width: 0; display: flex; }
+.spine-view { flex: 1; min-width: 0; min-height: 0; display: flex; }
 
 .spine-scroll {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  scroll-behavior: smooth;
+  overscroll-behavior: contain;
 }
 
 .spine-column {

@@ -262,6 +262,7 @@ function thinkingRow(label) {
 
 function beginSpineStream(genId, stepId, steering) {
   clearGenErrorCards();
+  resetStreamBuffer();
   state.spineGen = { genId, stepId, kind: 'spine', steering };
   updateIntro();
 
@@ -289,6 +290,7 @@ export function beginRegenStream(genId, stepId, steering) {
   const step = findStep(stepId);
   const stepEl = stepElOf(stepId);
   if (!step || !stepEl) return;
+  resetStreamBuffer();
   state.spineGen = {
     genId, stepId, kind: 'regen', steering,
     originalHtml: step.html,
@@ -309,13 +311,47 @@ function streamTargetContent() {
   return stepElOf(g.stepId)?.querySelector('.step-content') ?? null;
 }
 
+// Deltas arrive faster than the display refreshes, so they're coalesced into
+// one DOM write per frame — several innerHTML swaps inside a single frame is
+// work the user can never see.
+let queuedHtml = null;
+let flushHandle = 0;
+let lastFlushedHtml = '';
+
 function updateStreamContent(html) {
+  queuedHtml = html;
+  if (flushHandle) return;
+  flushHandle = requestAnimationFrame(flushStreamContent);
+}
+
+function flushStreamContent() {
+  flushHandle = 0;
+  const html = queuedHtml;
+  queuedHtml = null;
+  if (html === null || html === lastFlushedHtml) return;
+
   const contentEl = streamTargetContent();
   if (!contentEl) return;
+  lastFlushedHtml = html;
+
   const stick = nearBottom();
   contentEl.innerHTML = html;
-  contentEl.append(el('span', { class: 'stream-caret' }));
+
+  // Trail the caret at the end of the last line rather than orphaning it on
+  // a line of its own below the paragraph.
+  const caret = el('span', { class: 'stream-caret' });
+  const last = contentEl.lastElementChild;
+  if (last && /^(P|LI|H[1-6]|BLOCKQUOTE|TD)$/.test(last.tagName)) last.append(caret);
+  else contentEl.append(caret);
+
   if (state.spineGen?.kind === 'spine' && stick) scrollToBottom();
+}
+
+function resetStreamBuffer() {
+  if (flushHandle) cancelAnimationFrame(flushHandle);
+  flushHandle = 0;
+  queuedHtml = null;
+  lastFlushedHtml = '';
 }
 
 // ------------------------------------------------------------- events
@@ -345,6 +381,8 @@ export function handleGenEvent(name, payload) {
 function onDone(payload) {
   const g = state.spineGen;
   state.spineGen = null;
+  // Drop any queued frame — it would clobber the final render below.
+  resetStreamBuffer();
 
   if (!state.topic || state.topic.id !== payload.topic_id) {
     refreshTopicList();
@@ -394,6 +432,7 @@ const ERROR_TITLES = {
 function onError(payload) {
   const g = state.spineGen;
   state.spineGen = null;
+  resetStreamBuffer();
 
   const stepEl = g && g.kind === 'regen' ? stepElOf(g.stepId) : null;
 

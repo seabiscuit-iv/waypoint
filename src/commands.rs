@@ -340,7 +340,9 @@ async fn run_generation(
         .unwrap_or_else(Instant::now);
 
     let stream_fut = anthropic::stream_message(&http, &key, request, meter, move |full: &str| {
-        if last_emit.elapsed() >= Duration::from_millis(45) {
+        // Below one display frame — the webview coalesces deltas per frame,
+        // so a tighter cadence buys smoother text without extra DOM work.
+        if last_emit.elapsed() >= Duration::from_millis(16) {
             last_emit = Instant::now();
             let _ = app_for_delta.emit(
                 "gen:delta",

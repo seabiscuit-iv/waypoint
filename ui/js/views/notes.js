@@ -404,6 +404,35 @@ function replaceNoteInState(note) {
 
 // ------------------------------------------------------------- events
 
+// One DOM write per frame, same as the spine stream.
+let queuedNoteHtml = null;
+let noteFlushHandle = 0;
+
+function queueNoteDelta(html) {
+  queuedNoteHtml = html;
+  if (noteFlushHandle) return;
+  noteFlushHandle = requestAnimationFrame(() => {
+    noteFlushHandle = 0;
+    const pending = queuedNoteHtml;
+    queuedNoteHtml = null;
+    const bubble = qs('#np-streaming');
+    if (pending === null || !bubble) return;
+    bubble.innerHTML = pending;
+    const caret = el('span', { class: 'stream-caret' });
+    const last = bubble.lastElementChild;
+    if (last && /^(P|LI|H[1-6]|BLOCKQUOTE)$/.test(last.tagName)) last.append(caret);
+    else bubble.append(caret);
+    const thread = qs('#np-thread');
+    thread.scrollTop = thread.scrollHeight;
+  });
+}
+
+function resetNoteStreamBuffer() {
+  if (noteFlushHandle) cancelAnimationFrame(noteFlushHandle);
+  noteFlushHandle = 0;
+  queuedNoteHtml = null;
+}
+
 export function handleGenEvent(name, payload) {
   const g = state.noteGen;
   if (!g || payload.gen_id !== g.genId) return false;
@@ -411,18 +440,12 @@ export function handleGenEvent(name, payload) {
   switch (name) {
     case 'gen:start':
       return true;
-    case 'gen:delta': {
-      const bubble = qs('#np-streaming');
-      if (bubble) {
-        bubble.innerHTML = payload.html;
-        bubble.append(el('span', { class: 'stream-caret' }));
-        const thread = qs('#np-thread');
-        thread.scrollTop = thread.scrollHeight;
-      }
+    case 'gen:delta':
+      queueNoteDelta(payload.html);
       return true;
-    }
     case 'note:done': {
       state.noteGen = null;
+      resetNoteStreamBuffer();
       const note = findNote(payload.note_id);
       if (note && state.topic && state.topic.id === payload.topic_id) {
         note.messages.push(payload.message);
@@ -436,6 +459,7 @@ export function handleGenEvent(name, payload) {
     }
     case 'gen:error': {
       state.noteGen = null;
+      resetNoteStreamBuffer();
       if (payload.kind !== 'cancelled') {
         state.noteErrors.set(payload.note_id, payload.message);
       }
