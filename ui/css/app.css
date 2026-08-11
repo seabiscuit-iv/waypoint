@@ -680,6 +680,9 @@ kbd {
   padding: 2px 0;
 }
 math { font-size: 1.06em; color: inherit; }
+/* latex.css sets Latin Modern Roman for \text{…}; keep prose inside an
+   equation in the same face as the prose around it. */
+math mtext { font-family: var(--font-content); }
 
 .step-content blockquote {
   border-left: 3px solid var(--border-strong);

@@ -1,5 +1,6 @@
-use latex2mathml::{latex_to_mathml, DisplayStyle};
 use pulldown_cmark::{html, Event, Options, Parser};
+use pulldown_latex::config::DisplayMode;
+use pulldown_latex::{push_mathml, Parser as LatexParser, ParserError, RenderConfig, Storage};
 
 /// Render markdown to HTML. Raw HTML in the source is escaped (emitted as
 /// text) so model output can never inject markup into the webview.
@@ -17,8 +18,8 @@ pub fn render(md: &str) -> String {
     let parser = Parser::new_ext(md, opts).map(|ev| match ev {
         Event::Html(s) => Event::Text(s),
         Event::InlineHtml(s) => Event::Text(s),
-        Event::InlineMath(s) => render_math(&s, DisplayStyle::Inline),
-        Event::DisplayMath(s) => render_math(&s, DisplayStyle::Block),
+        Event::InlineMath(s) => render_math(&s, DisplayMode::Inline),
+        Event::DisplayMath(s) => render_math(&s, DisplayMode::Block),
         other => other,
     });
 
@@ -61,21 +62,93 @@ fn trim_incomplete_math(md: &str) -> &str {
 
 /// Converts one math span. Malformed LaTeX falls back to the delimited
 /// source as plain text, which push_html escapes.
-fn render_math(latex: &str, style: DisplayStyle) -> Event<'static> {
-    match latex_to_mathml(latex, style) {
-        Ok(mathml) => {
-            let markup = match style {
-                DisplayStyle::Block => format!(r#"<span class="math-block">{mathml}</span>"#),
-                DisplayStyle::Inline => format!(r#"<span class="math-inline">{mathml}</span>"#),
+fn render_math(latex: &str, mode: DisplayMode) -> Event<'static> {
+    match to_mathml(latex, mode) {
+        Some(mathml) => {
+            let class = match mode {
+                DisplayMode::Block => "math-block",
+                DisplayMode::Inline => "math-inline",
             };
-            Event::InlineHtml(markup.into())
+            Event::InlineHtml(format!(r#"<span class="{class}">{mathml}</span>"#).into())
         }
-        Err(_) => {
-            let fallback = match style {
-                DisplayStyle::Block => format!("$${latex}$$"),
-                DisplayStyle::Inline => format!("${latex}$"),
+        None => {
+            let fallback = match mode {
+                DisplayMode::Block => format!("$${latex}$$"),
+                DisplayMode::Inline => format!("${latex}$"),
             };
             Event::Text(fallback.into())
         }
+    }
+}
+
+fn to_mathml(latex: &str, mode: DisplayMode) -> Option<String> {
+    let storage = Storage::new();
+    // Collected up front so a parse error anywhere in the span rejects the
+    // whole thing, rather than rendering a half-formed equation.
+    let events = LatexParser::new(latex, &storage)
+        .collect::<Result<Vec<_>, ParserError>>()
+        .ok()?;
+
+    let config = RenderConfig {
+        display_mode: mode,
+        xml: true,
+        ..RenderConfig::default()
+    };
+    let mut out = String::new();
+    push_mathml(&mut out, events.into_iter().map(Ok::<_, ParserError>), config).ok()?;
+    Some(out)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{render, render_stream};
+
+    /// Cases drawn from real generated steps. The first renderer used here
+    /// (latex2mathml) returned Ok(..) with "[PARSE ERROR: ..]" embedded in
+    /// the MathML, so a fallback keyed on Result alone shipped error text
+    /// straight into the lesson.
+    const SHOULD_RENDER: &[&str] = &[
+        r"$w_k(x) = \frac{1}{\dfrac{\lVert x - x_k \rVert}{R_k} + \sqrt{1 - n(x)\cdot n(x_k)}}$",
+        r"$E(x) \approx \frac{\sum_k w_k(x)\, E(x_k)}{\sum_k w_k(x)}$",
+        r"$\lVert x - x_k\rVert$",
+        r"$\dfrac{a}{b}$",
+        r"$\int_0^\infty e^{-x^2}\,dx = \frac{\sqrt{\pi}}{2}$",
+        r"$\left( \frac{a}{b} \right)$",
+        r"$\hat{n} \cdot \vec{\omega}_i$",
+        r"$\mathbf{v} \times \mathbf{w}$",
+        r"$$\begin{cases} 1 & x > 0 \\ 0 & x \le 0 \end{cases}$$",
+        r"$$\begin{align} a &= b \\ c &= d \end{align}$$",
+    ];
+
+    #[test]
+    fn renders_math_without_leaking_errors() {
+        for case in SHOULD_RENDER {
+            let html = render(case);
+            assert!(html.contains("<math"), "expected MathML for {case}: {html}");
+            assert!(
+                !html.contains("PARSE ERROR") && !html.contains("merror"),
+                "renderer leaked an error for {case}: {html}"
+            );
+        }
+    }
+
+    #[test]
+    fn unparseable_math_falls_back_to_source() {
+        let html = render(r"$\bogus{x}$");
+        assert!(!html.contains("<math"), "expected no MathML: {html}");
+        assert!(html.contains("bogus"), "source should survive: {html}");
+    }
+
+    #[test]
+    fn incomplete_math_is_withheld_while_streaming() {
+        assert!(!render_stream(r"The weight is $\frac{1}{2").contains("frac"));
+        let literal = format!("It costs $5 {}", "and then some prose. ".repeat(12));
+        assert!(render_stream(&literal).contains("prose"));
+    }
+
+    #[test]
+    fn model_html_is_still_escaped() {
+        let html = render("<script>alert(1)</script>");
+        assert!(!html.contains("<script"), "raw HTML must not survive: {html}");
     }
 }

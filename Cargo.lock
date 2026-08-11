@@ -2074,12 +2074,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "latex2mathml"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "678cf5bdb3ba63a264e6e0c9eee36538ca1d2da0afa4dd801c1f96309e710765"
-
-[[package]]
 name = "libappindicator"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2869,6 +2863,15 @@ name = "pulldown-cmark-escape"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "007d8adb5ddab6f8e3f491ac63566a7d5002cc7ed73901f72057943fa71ae1ae"
+
+[[package]]
+name = "pulldown-latex"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1cf850381ae0dbb131f36e31d6090f55363d079ab3e518ad0323b9cb6a96d115"
+dependencies = [
+ "bumpalo",
+]
 
 [[package]]
 name = "quick-xml"
@@ -4810,8 +4813,8 @@ dependencies = [
  "chrono",
  "futures-util",
  "keyring",
- "latex2mathml",
  "pulldown-cmark",
+ "pulldown-latex",
  "reqwest 0.12.28",
  "rfd",
  "rusqlite",
