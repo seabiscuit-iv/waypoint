@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Waypoint</title>
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+
+  <!-- ======================= App shell ======================= -->
+  <div id="app" class="app-shell" hidden>
+
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-head">
+        <div class="brand">
+          <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+            <rect x="1" y="1" width="30" height="30" rx="8" class="brand-bg"/>
+            <path d="M8.5 24 L15 18.5 L13.5 13 L23 8" class="brand-path" />
+            <circle cx="8.5" cy="24" r="2.4" class="brand-dot" />
+            <circle cx="13.5" cy="13" r="1.9" class="brand-dot amber" />
+            <circle cx="23" cy="8" r="2.8" class="brand-dot ring" />
+          </svg>
+          <span class="brand-name">Waypoint</span>
+        </div>
+        <button id="btn-new-topic" class="btn btn-primary btn-block">
+          <svg viewBox="0 0 16 16" class="ic"><path d="M8 3v10M3 8h10" /></svg>
+          New topic
+        </button>
+      </div>
+
+      <nav id="topic-list" class="topic-list" aria-label="Topics"></nav>
+
+      <div id="sidebar-empty" class="sidebar-empty" hidden>
+        <p>No topics yet.</p>
+        <p class="dim">Start one — “ReSTIR”, “Rust async”, anything you want to actually understand.</p>
+      </div>
+
+      <div class="sidebar-foot">
+        <div id="usage-total" class="usage-total" title="Estimated API spend across all topics"></div>
+        <div class="foot-btns">
+          <button id="btn-shortcuts" class="icon-btn" title="Keyboard shortcuts (?)">
+            <svg viewBox="0 0 20 20" class="ic"><rect x="2" y="5" width="16" height="10" rx="2"/><path d="M5 12h10M5 8.5h.01M8 8.5h.01M11 8.5h.01M14 8.5h.01"/></svg>
+          </button>
+          <button id="btn-settings" class="icon-btn" title="Settings (Ctrl+,)">
+            <svg viewBox="0 0 20 20" class="ic"><circle cx="10" cy="10" r="2.6"/><path d="M10 2.5v2M10 15.5v2M17.5 10h-2M4.5 10h-2M15.3 4.7l-1.4 1.4M6.1 13.9l-1.4 1.4M15.3 15.3l-1.4-1.4M6.1 6.1L4.7 4.7"/></svg>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <main id="main" class="main">
+      <div id="offline-banner" class="offline-banner" hidden>
+        <svg viewBox="0 0 16 16" class="ic"><path d="M2 6.5a8.5 8.5 0 0 1 12 0M4.5 9a5 5 0 0 1 7 0M7 11.5a2 2 0 0 1 2 0"/><path d="M2 2l12 12"/></svg>
+        You’re offline — steps and side notes can’t be generated until the connection returns.
+      </div>
+
+      <div id="empty-main" class="empty-main">
+        <svg class="empty-art" viewBox="0 0 120 120" aria-hidden="true">
+          <path d="M28 96 C 44 84, 40 66, 56 58 C 72 50, 66 34, 88 24" class="art-path"/>
+          <circle cx="28" cy="96" r="6" class="art-dot"/>
+          <circle cx="56" cy="58" r="4.5" class="art-dot amber"/>
+          <circle cx="88" cy="24" r="7" class="art-dot ring"/>
+        </svg>
+        <h2>Pick a topic, or start a new one</h2>
+        <p>Waypoint teaches in small deliberate steps along a single path.<br/>Highlight anything confusing to open a side note without losing your place.</p>
+        <button id="btn-empty-new" class="btn btn-primary">Start a topic</button>
+      </div>
+
+      <div id="topic-view" class="topic-view" hidden>
+        <header id="topic-header" class="topic-header">
+          <div class="th-left">
+            <h1 id="topic-title" class="topic-title" title="Double-click to rename"></h1>
+            <button id="topic-status" class="status-pill" title="Click to change status"></button>
+          </div>
+          <div class="th-right">
+            <span id="topic-cost" class="cost-badge"></span>
+            <div class="view-toggle" role="tablist" aria-label="View">
+              <button id="btn-view-spine" class="active" role="tab">Spine</button>
+              <button id="btn-view-graph" role="tab">Map</button>
+            </div>
+            <span class="th-sep"></span>
+            <button id="btn-search" class="icon-btn" title="Search in topic (Ctrl+F)">
+              <svg viewBox="0 0 20 20" class="ic"><circle cx="9" cy="9" r="5.5"/><path d="M13.2 13.2 17 17"/></svg>
+            </button>
+            <button id="btn-ledger" class="icon-btn" title="Concept ledger">
+              <svg viewBox="0 0 20 20" class="ic"><path d="M4 3.5h9a2 2 0 0 1 2 2v11H6a2 2 0 0 1-2-2v-11Z"/><path d="M4 13.5a2 2 0 0 1 2-2h9M7.5 7h4.5"/></svg>
+            </button>
+            <button id="btn-export" class="icon-btn" title="Export as Markdown">
+              <svg viewBox="0 0 20 20" class="ic"><path d="M10 3v9M6.5 8.5 10 12l3.5-3.5"/><path d="M4 14.5v1a1.5 1.5 0 0 0 1.5 1.5h9a1.5 1.5 0 0 0 1.5-1.5v-1"/></svg>
+            </button>
+          </div>
+        </header>
+
+        <div id="search-bar" class="search-bar" hidden>
+          <svg viewBox="0 0 20 20" class="ic dim"><circle cx="9" cy="9" r="5.5"/><path d="M13.2 13.2 17 17"/></svg>
+          <input id="search-input" type="text" placeholder="Search steps and side notes…" autocomplete="off" spellcheck="false"/>
+          <span id="search-count" class="search-count"></span>
+          <button id="search-prev" class="icon-btn sm" title="Previous (Shift+Enter)"><svg viewBox="0 0 16 16" class="ic"><path d="M4 10l4-4 4 4"/></svg></button>
+          <button id="search-next" class="icon-btn sm" title="Next (Enter)"><svg viewBox="0 0 16 16" class="ic"><path d="M4 6l4 4 4-4"/></svg></button>
+          <button id="search-close" class="icon-btn sm" title="Close (Esc)"><svg viewBox="0 0 16 16" class="ic"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
+        </div>
+
+        <div id="content-area" class="content-area">
+
+          <section id="spine-view" class="spine-view">
+            <div id="spine-scroll" class="spine-scroll">
+              <div class="spine-column">
+                <div id="topic-seed" class="topic-seed" hidden></div>
+                <div id="steps" class="steps"></div>
+                <div id="spine-intro" class="spine-intro" hidden>
+                  <p class="intro-line">The path starts here.</p>
+                  <p class="dim">Waypoint will introduce <b class="intro-topic"></b> one small step at a time. Add a steering note below if you want the first step to start somewhere specific.</p>
+                </div>
+                <div id="composer" class="composer">
+                  <button id="btn-plus" class="plus-btn" title="Next step (Ctrl+Enter)">
+                    <span class="plus-circle"><svg viewBox="0 0 16 16" class="ic"><path d="M8 3v10M3 8h10"/></svg></span>
+                    <span class="plus-label">Next step</span>
+                  </button>
+                  <div id="composer-input-wrap" class="composer-input-wrap" hidden>
+                    <textarea id="composer-input" rows="1" placeholder="Steer the next step — or leave empty and Waypoint decides"></textarea>
+                    <div class="composer-actions">
+                      <span class="composer-hint"><kbd>Enter</kbd> generate · <kbd>Esc</kbd> close</span>
+                      <button id="composer-go" class="btn btn-primary btn-sm">Generate</button>
+                    </div>
+                  </div>
+                  <button id="btn-stop-gen" class="btn btn-ghost btn-sm stop-btn" hidden>
+                    <svg viewBox="0 0 16 16" class="ic"><rect x="4" y="4" width="8" height="8" rx="1.5"/></svg>
+                    Stop
+                  </button>
+                </div>
+                <div class="spine-tail"></div>
+              </div>
+            </div>
+          </section>
+
+          <section id="graph-view" class="graph-view" hidden>
+            <div id="graph-canvas" class="graph-canvas">
+              <div id="graph-world" class="graph-world">
+                <svg id="graph-edges" class="graph-edges"></svg>
+                <div id="graph-nodes" class="graph-nodes"></div>
+              </div>
+            </div>
+            <div class="graph-hint">Drag to pan · Scroll to zoom · Hover to preview · <kbd>J</kbd><kbd>K</kbd> walk · <kbd>Enter</kbd> read · <kbd>0</kbd> re-centre</div>
+            <div id="graph-preview" class="graph-preview" hidden></div>
+          </section>
+
+          <aside id="ledger-drawer" class="drawer" hidden>
+            <header class="drawer-head">
+              <h3>Concept ledger</h3>
+              <button id="ledger-close" class="icon-btn sm"><svg viewBox="0 0 16 16" class="ic"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
+            </header>
+            <p class="drawer-sub">Everything covered so far — steps and resolved side notes. Waypoint feeds this into each new step so nothing gets re-taught.</p>
+            <div class="drawer-filter">
+              <svg viewBox="0 0 16 16" class="ic"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg>
+              <input id="ledger-filter" type="text" placeholder="Filter concepts…" autocomplete="off" spellcheck="false" />
+            </div>
+            <div id="ledger-list" class="ledger-list"></div>
+            <div id="ledger-empty" class="drawer-empty" hidden>Nothing yet — concepts appear here as steps are generated.</div>
+          </aside>
+
+          <aside id="note-panel" class="note-panel" hidden>
+            <header class="np-head">
+              <div class="np-heading">
+                <span class="np-label">Side note</span>
+                <blockquote id="np-quote" class="np-quote"></blockquote>
+              </div>
+              <div class="np-actions">
+                <button id="np-resolve" class="btn btn-ghost btn-sm"></button>
+                <button id="np-delete" class="icon-btn sm" title="Delete side note">
+                  <svg viewBox="0 0 20 20" class="ic"><path d="M4 6h12M8 6V4.5A1.5 1.5 0 0 1 9.5 3h1A1.5 1.5 0 0 1 12 4.5V6m2.5 0-.7 9.2a1.8 1.8 0 0 1-1.8 1.8H8a1.8 1.8 0 0 1-1.8-1.8L5.5 6M8.5 9v5M11.5 9v5"/></svg>
+                </button>
+                <button id="np-close" class="icon-btn sm" title="Close (Esc)"><svg viewBox="0 0 16 16" class="ic"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
+              </div>
+            </header>
+            <div id="np-thread" class="np-thread"></div>
+            <div id="np-composer" class="np-composer">
+              <textarea id="np-input" rows="1" placeholder="Ask about the highlight…"></textarea>
+              <button id="np-send" class="btn btn-primary btn-sm">Ask</button>
+            </div>
+          </aside>
+
+        </div>
+      </div>
+
+      <div id="node-max" class="node-max" hidden>
+        <div class="nm-card">
+          <header class="nm-head">
+            <div class="nm-meta">
+              <span id="nm-kicker" class="nm-kicker"></span>
+              <span id="nm-title" class="nm-title"></span>
+            </div>
+            <div class="nm-btns">
+              <button id="nm-goto" class="btn btn-ghost btn-sm">Open in spine</button>
+              <button id="nm-close" class="icon-btn" title="Back to map (Esc)"><svg viewBox="0 0 16 16" class="ic"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
+            </div>
+          </header>
+          <div id="nm-body" class="nm-body"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ======================= Onboarding gate ======================= -->
+  <div id="gate" class="gate" hidden>
+    <div class="gate-card">
+      <div class="gate-brand">
+        <svg class="gate-mark" viewBox="0 0 32 32" aria-hidden="true">
+          <rect x="1" y="1" width="30" height="30" rx="8" class="brand-bg"/>
+          <path d="M8.5 24 L15 18.5 L13.5 13 L23 8" class="brand-path"/>
+          <circle cx="8.5" cy="24" r="2.4" class="brand-dot"/>
+          <circle cx="13.5" cy="13" r="1.9" class="brand-dot amber"/>
+          <circle cx="23" cy="8" r="2.8" class="brand-dot ring"/>
+        </svg>
+        <h1>Waypoint</h1>
+      </div>
+      <p class="gate-tag">Learn anything one deliberate step at a time — a single spine of ideas, with side notes exactly where you need them.</p>
+
+      <div class="gate-methods">
+        <div class="gate-method is-disabled" aria-disabled="true">
+          <div class="gm-head">
+            <h3>Anthropic account</h3>
+            <span class="soon-pill">Not yet available</span>
+          </div>
+          <p>Signing in with an Anthropic account isn’t supported for third-party apps yet. Use an API key below.</p>
+        </div>
+
+        <div class="gate-method">
+          <div class="gm-head"><h3>API key</h3></div>
+          <p>Paste an Anthropic API key from <span class="mono">console.anthropic.com</span>. It’s stored in Windows Credential Manager — never in a file.</p>
+          <div class="key-row">
+            <input id="gate-key" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false"/>
+            <button id="gate-save" class="btn btn-primary">Connect</button>
+          </div>
+          <div id="gate-status" class="gate-status" hidden></div>
+          <button id="gate-anyway" class="link-btn" hidden>Use this key anyway →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================= Floating bits ======================= -->
+  <div id="selection-popover" class="selection-popover" hidden>
+    <button id="btn-ask-selection">
+      <svg viewBox="0 0 16 16" class="ic"><path d="M3 3.5h10a1 1 0 0 1 1 1V10a1 1 0 0 1-1 1H8l-3 2.8V11H3a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z"/></svg>
+      Ask about this
+      <kbd>A</kbd>
+    </button>
+  </div>
+
+  <div id="modal-root"></div>
+  <div id="menu-root"></div>
+  <div id="toast-root" class="toast-root"></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
