@@ -69,6 +69,30 @@ export function truncate(s, n) {
   return s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s;
 }
 
+const patchScratch = document.createElement('div');
+
+/**
+ * Applies streamed HTML to `host` by replacing only the trailing blocks that
+ * actually changed. Streaming markdown is append-only at the block level, so
+ * this normally rewrites just the last paragraph — assigning innerHTML would
+ * instead destroy and reflow every settled block on every frame.
+ * Returns the last element child, for caret placement.
+ */
+export function patchStreamHtml(host, html) {
+  patchScratch.innerHTML = html;
+  const next = Array.from(patchScratch.children);
+  const cur = Array.from(host.children);
+
+  let i = 0;
+  while (i < cur.length && i < next.length && cur[i].outerHTML === next[i].outerHTML) i++;
+
+  for (let j = cur.length - 1; j >= i; j--) cur[j].remove();
+  for (let j = i; j < next.length; j++) host.append(next[j]);
+
+  patchScratch.textContent = '';
+  return host.lastElementChild;
+}
+
 /** Grow a textarea to fit its content (capped by CSS max-height). */
 export function autoGrow(ta) {
   ta.style.height = 'auto';

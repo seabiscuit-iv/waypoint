@@ -1,7 +1,7 @@
 // The spine: linear steps, the "+" composer, streaming generation,
 // regenerate/edit/copy actions, and first-class inline error states.
 
-import { qs, el, icon, toast, toastErr, timeAgo, autoGrow, copyText } from './util.js';
+import { qs, el, icon, toast, toastErr, timeAgo, autoGrow, copyText, patchStreamHtml } from './util.js';
 import { api } from './api.js';
 import { state, findStep, drainEarlyEvents } from './state.js';
 import * as notes from './views/notes.js';
@@ -335,12 +335,12 @@ function flushStreamContent() {
   lastFlushedHtml = html;
 
   const stick = nearBottom();
-  contentEl.innerHTML = html;
+  contentEl.querySelector('.stream-caret')?.remove();
+  const last = patchStreamHtml(contentEl, html);
 
   // Trail the caret at the end of the last line rather than orphaning it on
   // a line of its own below the paragraph.
   const caret = el('span', { class: 'stream-caret' });
-  const last = contentEl.lastElementChild;
   if (last && /^(P|LI|H[1-6]|BLOCKQUOTE|TD)$/.test(last.tagName)) last.append(caret);
   else contentEl.append(caret);
 

@@ -340,16 +340,17 @@ async fn run_generation(
         .unwrap_or_else(Instant::now);
 
     let stream_fut = anthropic::stream_message(&http, &key, request, meter, move |full: &str| {
-        // Below one display frame — the webview coalesces deltas per frame,
-        // so a tighter cadence buys smoother text without extra DOM work.
-        if last_emit.elapsed() >= Duration::from_millis(16) {
+        // ~30fps. The webview coalesces to one DOM write per frame anyway, so
+        // a faster cadence only doubles IPC traffic and re-render cost for
+        // frames nobody sees.
+        if last_emit.elapsed() >= Duration::from_millis(33) {
             last_emit = Instant::now();
             let _ = app_for_delta.emit(
                 "gen:delta",
                 GenDeltaEvent {
                     gen_id: gen_id_owned.clone(),
                     raw: full.to_string(),
-                    html: markdown::render(full),
+                    html: markdown::render_stream(full),
                 },
             );
         }

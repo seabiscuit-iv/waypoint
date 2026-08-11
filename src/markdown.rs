@@ -27,6 +27,38 @@ pub fn render(md: &str) -> String {
     out
 }
 
+/// How far back a still-unclosed `$` is allowed to be before we assume it is
+/// a literal dollar sign rather than math the model is mid-way through.
+const MAX_OPEN_MATH_TAIL: usize = 160;
+
+/// Render for a stream in progress. Identical to [`render`] except that a
+/// half-received math span is withheld rather than shown as raw LaTeX that
+/// snaps into a formula a frame later.
+pub fn render_stream(md: &str) -> String {
+    render(trim_incomplete_math(md))
+}
+
+fn trim_incomplete_math(md: &str) -> &str {
+    let bytes = md.as_bytes();
+    let mut i = 0;
+    let mut open_at: Option<usize> = None;
+    while i < bytes.len() {
+        match bytes[i] {
+            b'\\' => i += 2,
+            b'$' => {
+                let delim = if bytes.get(i + 1) == Some(&b'$') { 2 } else { 1 };
+                open_at = if open_at.is_some() { None } else { Some(i) };
+                i += delim;
+            }
+            _ => i += 1,
+        }
+    }
+    match open_at {
+        Some(idx) if md.len() - idx <= MAX_OPEN_MATH_TAIL && md.is_char_boundary(idx) => &md[..idx],
+        _ => md,
+    }
+}
+
 /// Converts one math span. Malformed LaTeX falls back to the delimited
 /// source as plain text, which push_html escapes.
 fn render_math(latex: &str, style: DisplayStyle) -> Event<'static> {

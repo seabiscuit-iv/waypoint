@@ -3,7 +3,7 @@
 // re-anchored by search when offsets drift, and fall back to "detached"
 // chips under the step when the quoted text disappears entirely.
 
-import { qs, el, icon, toast, toastErr, autoGrow, truncate, confirmModal } from '../util.js';
+import { qs, el, icon, toast, toastErr, autoGrow, truncate, confirmModal, patchStreamHtml } from '../util.js';
 import { api } from '../api.js';
 import { state, findNote, findStep, notesForStep, drainEarlyEvents } from '../state.js';
 import { selectionOffsets, plainText, wrapPlainRange } from '../anchors.js';
@@ -417,9 +417,9 @@ function queueNoteDelta(html) {
     queuedNoteHtml = null;
     const bubble = qs('#np-streaming');
     if (pending === null || !bubble) return;
-    bubble.innerHTML = pending;
+    bubble.querySelector('.stream-caret')?.remove();
+    const last = patchStreamHtml(bubble, pending);
     const caret = el('span', { class: 'stream-caret' });
-    const last = bubble.lastElementChild;
     if (last && /^(P|LI|H[1-6]|BLOCKQUOTE)$/.test(last.tagName)) last.append(caret);
     else bubble.append(caret);
     const thread = qs('#np-thread');
