@@ -670,6 +670,17 @@ kbd {
   margin: 0 0 0.85em;
 }
 .step-content pre code { background: none; border: none; padding: 0; font-size: 12.5px; line-height: 1.55; }
+.math-inline { white-space: nowrap; }
+.math-block {
+  display: block;
+  overflow-x: auto;
+  overflow-y: hidden;
+  text-align: center;
+  margin: 0 0 0.9em;
+  padding: 2px 0;
+}
+math { font-size: 1.06em; color: inherit; }
+
 .step-content blockquote {
   border-left: 3px solid var(--border-strong);
   padding-left: 12px;

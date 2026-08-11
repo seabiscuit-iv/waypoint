@@ -76,6 +76,7 @@ fn spine_system(
     s.push_str(&format!("- {size_line}\n"));
     s.push_str("- Plain, precise language. Prefer concrete intuition before formalism.\n");
     s.push_str("- Use Markdown sparingly: bold for a newly introduced term, occasional lists or inline `code`. No headings, no horizontal rules, no closing summary.\n");
+    s.push_str("- Write mathematics in LaTeX: $ \u{2026} $ for inline math, $$ \u{2026} $$ on its own lines for a displayed equation. Use it whenever a formula is clearer than prose, and define each symbol you introduce.\n");
     s.push_str("- Do not preview or promise future steps; never end with \"next we will\u{2026}\".\n");
     s.push_str("- Do not re-explain concepts already covered (listed below). Build on them by name instead.\n");
     s.push_str("- If the learner steers the step with an instruction, follow it while keeping the response one focused step.\n");
@@ -168,6 +169,7 @@ pub fn build_side_note_request(
     let mut system = String::new();
     system.push_str("You are Waypoint's side-note assistant. The learner is reading a lesson step and highlighted a specific phrase to ask about it.\n\n");
     system.push_str("Answer only the learner's question about the highlighted text: conversational and concise, one short paragraph unless they explicitly ask for more. Stay scoped to the clarification \u{2014} do not continue the lesson, introduce the next concept, or restate the whole step.\n\n");
+    system.push_str("Write mathematics in LaTeX: $ \u{2026} $ for inline math, $$ \u{2026} $$ on its own lines for a displayed equation.\n\n");
     system.push_str(&format!("Topic being learned: {topic_title}\n\n"));
     system.push_str("The lesson step the learner is reading:\n<step>\n");
     system.push_str(&truncate_chars(step_content, MAX_EXCERPT_CHARS));
