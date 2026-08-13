@@ -168,7 +168,7 @@ export async function exportCurrent() {
 
 // Mirrors MAX_SEED_CHARS in prompts.rs — anything past this is trimmed off
 // before the seed reaches the model, so the modal says so up front.
-const SEED_BUDGET_CHARS = 24000;
+const SEED_BUDGET_CHARS = 200000;
 
 /** Free-text notes first, then each document under its own filename header. */
 function buildSeed(typedNotes, attached) {

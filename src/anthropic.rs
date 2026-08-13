@@ -34,22 +34,67 @@ impl ChatMessage {
     }
 }
 
+/// Beta opt-in for the 1-hour cache TTL. The default 5-minute window expires
+/// while the learner is reading a step, which is precisely when the cache
+/// needs to survive.
+pub const EXTENDED_CACHE_BETA: &str = "extended-cache-ttl-2025-04-11";
+
+/// One block of the system prompt. Everything up to and including the block
+/// marked `cache` forms the cached prefix, so cached blocks must come first
+/// and must not change between calls.
+#[derive(Debug, Clone)]
+pub struct SystemBlock {
+    pub text: String,
+    pub cache: bool,
+}
+
+impl SystemBlock {
+    pub fn stable(text: impl Into<String>) -> Self {
+        Self {
+            text: text.into(),
+            cache: true,
+        }
+    }
+    pub fn volatile(text: impl Into<String>) -> Self {
+        Self {
+            text: text.into(),
+            cache: false,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct MessagesRequest {
     pub model: String,
     pub max_tokens: u32,
-    pub system: String,
+    pub system: Vec<SystemBlock>,
     pub messages: Vec<ChatMessage>,
     /// Effort level for models that support `output_config.effort`
     /// (None for models that reject it, e.g. Haiku 4.5).
     pub effort: Option<String>,
 }
 
+/// Token counts split by how they are billed.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Usage {
+    /// Input billed at the normal rate (neither written to nor read from cache).
+    pub input_tokens: i64,
+    pub cache_write_tokens: i64,
+    pub cache_read_tokens: i64,
+    pub output_tokens: i64,
+}
+
+impl Usage {
+    /// Every input token, however billed — what the UI reports.
+    pub fn total_input(&self) -> i64 {
+        self.input_tokens + self.cache_write_tokens + self.cache_read_tokens
+    }
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct CompletionResult {
     pub text: String,
-    pub input_tokens: i64,
-    pub output_tokens: i64,
+    pub usage: Usage,
     pub stop_reason: Option<String>,
 }
 
@@ -61,13 +106,17 @@ pub struct CompletionResult {
 #[derive(Debug, Default)]
 pub struct UsageMeter {
     input: AtomicI64,
+    cache_write: AtomicI64,
+    cache_read: AtomicI64,
     output: AtomicI64,
     text_chars: AtomicI64,
 }
 
 impl UsageMeter {
-    fn set_input(&self, v: i64) {
-        self.input.store(v, Ordering::Relaxed);
+    fn set_input(&self, u: Usage) {
+        self.input.store(u.input_tokens, Ordering::Relaxed);
+        self.cache_write.store(u.cache_write_tokens, Ordering::Relaxed);
+        self.cache_read.store(u.cache_read_tokens, Ordering::Relaxed);
     }
     fn set_output(&self, v: i64) {
         self.output.store(v, Ordering::Relaxed);
@@ -76,17 +125,21 @@ impl UsageMeter {
         self.text_chars.store(v, Ordering::Relaxed);
     }
 
-    /// (input, output). Input is always the API's own figure. Output is the
-    /// API's figure when the stream reached `message_delta`; otherwise it is
-    /// estimated from the text received (~4 chars/token), since the tokens
-    /// were generated and billed even though the final count never arrived.
-    pub fn totals(&self) -> (i64, i64) {
-        let input = self.input.load(Ordering::Relaxed);
+    /// Input figures are always the API's own. Output is the API's figure
+    /// when the stream reached `message_delta`; otherwise it is estimated
+    /// from the text received (~4 chars/token), since those tokens were
+    /// generated and billed even though the final count never arrived.
+    pub fn totals(&self) -> Usage {
         let output = self.output.load(Ordering::Relaxed);
-        if output > 0 {
-            (input, output)
-        } else {
-            (input, self.text_chars.load(Ordering::Relaxed) / 4)
+        Usage {
+            input_tokens: self.input.load(Ordering::Relaxed),
+            cache_write_tokens: self.cache_write.load(Ordering::Relaxed),
+            cache_read_tokens: self.cache_read.load(Ordering::Relaxed),
+            output_tokens: if output > 0 {
+                output
+            } else {
+                self.text_chars.load(Ordering::Relaxed) / 4
+            },
         }
     }
 }
@@ -120,14 +173,31 @@ impl ApiError {
     }
 }
 
+fn uses_cache(req: &MessagesRequest) -> bool {
+    req.system.iter().any(|b| b.cache && !b.text.is_empty())
+}
+
 fn request_body(req: &MessagesRequest, stream: bool) -> Value {
     let mut body = json!({
         "model": req.model,
         "max_tokens": req.max_tokens,
         "messages": req.messages,
     });
-    if !req.system.is_empty() {
-        body["system"] = Value::String(req.system.clone());
+
+    let blocks: Vec<Value> = req
+        .system
+        .iter()
+        .filter(|b| !b.text.is_empty())
+        .map(|b| {
+            let mut block = json!({ "type": "text", "text": b.text });
+            if b.cache {
+                block["cache_control"] = json!({ "type": "ephemeral", "ttl": "1h" });
+            }
+            block
+        })
+        .collect();
+    if !blocks.is_empty() {
+        body["system"] = Value::Array(blocks);
     }
     if stream {
         body["stream"] = Value::Bool(true);
@@ -190,6 +260,7 @@ async fn send(
     http: &reqwest::Client,
     api_key: &str,
     body: &Value,
+    cache: bool,
     timeout: Option<Duration>,
 ) -> Result<reqwest::Response, ApiError> {
     let mut builder = http
@@ -198,6 +269,9 @@ async fn send(
         .header("anthropic-version", ANTHROPIC_VERSION)
         .header("content-type", "application/json")
         .json(body);
+    if cache {
+        builder = builder.header("anthropic-beta", EXTENDED_CACHE_BETA);
+    }
     if let Some(t) = timeout {
         builder = builder.timeout(t);
     }
@@ -213,10 +287,10 @@ async fn send(
     Ok(resp)
 }
 
-fn read_usage_input(usage: &Value) -> i64 {
-    usage["input_tokens"].as_i64().unwrap_or(0)
-        + usage["cache_creation_input_tokens"].as_i64().unwrap_or(0)
-        + usage["cache_read_input_tokens"].as_i64().unwrap_or(0)
+fn read_usage_input(usage: &Value, out: &mut Usage) {
+    out.input_tokens = usage["input_tokens"].as_i64().unwrap_or(0);
+    out.cache_write_tokens = usage["cache_creation_input_tokens"].as_i64().unwrap_or(0);
+    out.cache_read_tokens = usage["cache_read_input_tokens"].as_i64().unwrap_or(0);
 }
 
 fn find_subslice(haystack: &[u8], needle: &[u8]) -> Option<usize> {
@@ -257,8 +331,8 @@ fn handle_sse_block(
         };
         match v["type"].as_str().unwrap_or("") {
             "message_start" => {
-                out.input_tokens = read_usage_input(&v["message"]["usage"]);
-                meter.set_input(out.input_tokens);
+                read_usage_input(&v["message"]["usage"], &mut out.usage);
+                meter.set_input(out.usage);
             }
             "content_block_delta" => {
                 if v["delta"]["type"].as_str() == Some("text_delta") {
@@ -274,7 +348,7 @@ fn handle_sse_block(
                     out.stop_reason = Some(sr.to_string());
                 }
                 if let Some(o) = v["usage"]["output_tokens"].as_i64() {
-                    out.output_tokens = o;
+                    out.usage.output_tokens = o;
                     meter.set_output(o);
                 }
             }
@@ -300,7 +374,14 @@ pub async fn stream_message(
     meter: &UsageMeter,
     mut on_text: impl FnMut(&str),
 ) -> Result<CompletionResult, ApiError> {
-    let resp = send(http, api_key, &request_body(req, true), None).await?;
+    let resp = send(
+        http,
+        api_key,
+        &request_body(req, true),
+        uses_cache(req),
+        None,
+    )
+    .await?;
     let mut stream = resp.bytes_stream();
     let mut buf: Vec<u8> = Vec::new();
     let mut out = CompletionResult::default();
@@ -339,6 +420,7 @@ pub async fn complete_message(
         http,
         api_key,
         &request_body(req, false),
+        uses_cache(req),
         Some(Duration::from_secs(120)),
     )
     .await?;
@@ -357,8 +439,8 @@ pub async fn complete_message(
             }
         }
     }
-    out.input_tokens = read_usage_input(&v["usage"]);
-    out.output_tokens = v["usage"]["output_tokens"].as_i64().unwrap_or(0);
+    read_usage_input(&v["usage"], &mut out.usage);
+    out.usage.output_tokens = v["usage"]["output_tokens"].as_i64().unwrap_or(0);
     out.stop_reason = v["stop_reason"].as_str().map(str::to_string);
     if out.stop_reason.as_deref() == Some("refusal") {
         return Err(ApiError::Refusal);
@@ -378,7 +460,16 @@ pub fn price_per_mtok(model: &str) -> (f64, f64) {
     }
 }
 
-pub fn cost_usd(model: &str, input_tokens: i64, output_tokens: i64) -> f64 {
+/// Cache writes on the 1-hour TTL bill at 2x the base input rate; cache
+/// reads at 0.1x. Charging every input token at the base rate would overstate
+/// a cached topic's spend by roughly an order of magnitude.
+const CACHE_WRITE_MULTIPLIER: f64 = 2.0;
+const CACHE_READ_MULTIPLIER: f64 = 0.1;
+
+pub fn cost_usd(model: &str, usage: &Usage) -> f64 {
     let (pi, po) = price_per_mtok(model);
-    (input_tokens as f64 * pi + output_tokens as f64 * po) / 1_000_000.0
+    let input = usage.input_tokens as f64 * pi
+        + usage.cache_write_tokens as f64 * pi * CACHE_WRITE_MULTIPLIER
+        + usage.cache_read_tokens as f64 * pi * CACHE_READ_MULTIPLIER;
+    (input + usage.output_tokens as f64 * po) / 1_000_000.0
 }

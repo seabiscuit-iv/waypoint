@@ -5,16 +5,17 @@
 //! Side-note generation gets: the anchor step + highlighted text + its own
 //! short thread. It never sees the rest of the spine.
 
-use crate::anthropic::{ChatMessage, MessagesRequest};
+use crate::anthropic::{ChatMessage, MessagesRequest, SystemBlock};
 use crate::models::{Settings, SideNoteMessage, SpineStep};
 
 /// Full spine steps included verbatim in context; older ones are represented
 /// only by the concept ledger.
 const MAX_HISTORY_STEPS: usize = 24;
-/// Seed context can now be whole attached documents, so this is sized for a
-/// paper rather than a pasted abstract. Kept in sync with SEED_BUDGET_CHARS
-/// in ui/js/views/topics.js, which warns before the trim happens.
-const MAX_SEED_CHARS: usize = 24000;
+/// The seed is resent on every step, but it sits in the cached prefix, so
+/// resends bill at the cache-read rate rather than full price. This is now a
+/// context-window guard rather than a cost guard. Kept in sync with
+/// SEED_BUDGET_CHARS in ui/js/views/topics.js.
+const MAX_SEED_CHARS: usize = 200_000;
 const MAX_EXCERPT_CHARS: usize = 6000;
 
 /// Cheap model used for concept-ledger extraction and the key-test ping.
@@ -58,19 +59,31 @@ fn truncate_chars(s: &str, max: usize) -> String {
     }
 }
 
+/// Seed context long enough to be worth caching. Below the model's minimum
+/// cacheable prefix the marker is simply ignored, so this only avoids paying
+/// the write premium on a prefix that could never be reused.
+const MIN_CACHEABLE_SEED_CHARS: usize = 4000;
+
+/// The system prompt in two parts: everything stable for the life of the
+/// topic, then the concept ledger, which changes after every step. The split
+/// is what makes caching possible — a single block ending in the ledger would
+/// differ on every call and never hit the cache.
 fn spine_system(
     title: &str,
     seed: Option<&str>,
     size_line: &str,
     ledger: &[String],
-) -> String {
+) -> Vec<SystemBlock> {
     let mut s = String::new();
     s.push_str("You are Waypoint, a tutor that builds understanding one deliberate step at a time.\n\n");
     s.push_str(&format!("Topic being learned: {title}\n"));
 
+    let mut cacheable = false;
     if let Some(seed) = seed {
+        let seed = truncate_chars(seed, MAX_SEED_CHARS);
+        cacheable = seed.len() >= MIN_CACHEABLE_SEED_CHARS;
         s.push_str("\nThe learner supplied this source material as starting context. Ground the path in it where relevant:\n<source_material>\n");
-        s.push_str(&truncate_chars(seed, MAX_SEED_CHARS));
+        s.push_str(&seed);
         s.push_str("\n</source_material>\n");
     }
 
@@ -84,15 +97,24 @@ fn spine_system(
     s.push_str("- Do not re-explain concepts already covered (listed below). Build on them by name instead.\n");
     s.push_str("- If the learner steers the step with an instruction, follow it while keeping the response one focused step.\n");
 
-    s.push_str("\nConcepts already covered (including ones clarified in side notes):\n");
+    let mut volatile = String::new();
+    volatile.push_str("Concepts already covered (including ones clarified in side notes):\n");
     if ledger.is_empty() {
-        s.push_str("(none yet \u{2014} this is the beginning of the path)\n");
+        volatile.push_str("(none yet \u{2014} this is the beginning of the path)\n");
     } else {
         for label in ledger {
-            s.push_str(&format!("- {label}\n"));
+            volatile.push_str(&format!("- {label}\n"));
         }
     }
-    s
+
+    vec![
+        if cacheable {
+            SystemBlock::stable(s)
+        } else {
+            SystemBlock::volatile(s)
+        },
+        SystemBlock::volatile(volatile),
+    ]
 }
 
 fn history_messages(steps: &[SpineStep]) -> Vec<ChatMessage> {
@@ -190,7 +212,7 @@ pub fn build_side_note_request(
     MessagesRequest {
         model: model.to_string(),
         max_tokens: 2500,
-        system,
+        system: vec![SystemBlock::volatile(system)],
         messages,
         effort: effort_for(model, "low"),
     }
@@ -214,7 +236,7 @@ pub fn build_ledger_request(excerpt: &str, existing: &[String]) -> MessagesReque
     MessagesRequest {
         model: LEDGER_MODEL.to_string(),
         max_tokens: 500,
-        system,
+        system: vec![SystemBlock::volatile(system)],
         messages: vec![ChatMessage::user(user)],
         effort: None,
     }
@@ -242,7 +264,7 @@ pub fn test_key_request() -> MessagesRequest {
     MessagesRequest {
         model: LEDGER_MODEL.to_string(),
         max_tokens: 1,
-        system: String::new(),
+        system: Vec::new(),
         messages: vec![ChatMessage::user("Hi")],
         effort: None,
     }

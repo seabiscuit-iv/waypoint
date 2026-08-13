@@ -421,15 +421,22 @@ fn record_partial_usage(
     request: &MessagesRequest,
     meter: &anthropic::UsageMeter,
 ) {
-    let (input, output) = meter.totals();
-    if input == 0 && output == 0 {
+    let usage = meter.totals();
+    if usage.total_input() == 0 && usage.output_tokens == 0 {
         return;
     }
-    let cost = anthropic::cost_usd(&request.model, input, output);
+    let cost = anthropic::cost_usd(&request.model, &usage);
     {
         let state = app.state::<AppState>();
         let conn = lock_db(&state);
-        let _ = db::add_usage(&conn, topic_id, input, output, cost, &now_iso());
+        let _ = db::add_usage(
+            &conn,
+            topic_id,
+            usage.total_input(),
+            usage.output_tokens,
+            cost,
+            &now_iso(),
+        );
     }
     // Carries the refreshed usage totals to the UI.
     emit_ledger_state(app, topic_id);
@@ -483,8 +490,15 @@ fn spawn_ledger_extraction(
                     &conn, &topic_id, &labels, &source_kind, &source_id, &now,
                 );
             }
-            let cost = anthropic::cost_usd(&request.model, res.input_tokens, res.output_tokens);
-            let _ = db::add_usage(&conn, &topic_id, res.input_tokens, res.output_tokens, cost, &now);
+            let cost = anthropic::cost_usd(&request.model, &res.usage);
+            let _ = db::add_usage(
+                &conn,
+                &topic_id,
+                res.usage.total_input(),
+                res.usage.output_tokens,
+                cost,
+                &now,
+            );
         }
         emit_ledger_state(&app, &topic_id);
     });
@@ -559,16 +573,12 @@ fn spawn_spine_generation(
                                 db::delete_ledger_for_source(&conn, &step_id)?;
                             }
                         }
-                        let cost = anthropic::cost_usd(
-                            &request.model,
-                            res.input_tokens,
-                            res.output_tokens,
-                        );
+                        let cost = anthropic::cost_usd(&request.model, &res.usage);
                         db::add_usage(
                             &conn,
                             &topic_id,
-                            res.input_tokens,
-                            res.output_tokens,
+                            res.usage.total_input(),
+                            res.usage.output_tokens,
                             cost,
                             &now,
                         )?;
@@ -671,16 +681,12 @@ fn spawn_note_generation(
                         db::insert_note_message(
                             &conn, &msg_id, &note_id, "assistant", &res.text, &now,
                         )?;
-                        let cost = anthropic::cost_usd(
-                            &request.model,
-                            res.input_tokens,
-                            res.output_tokens,
-                        );
+                        let cost = anthropic::cost_usd(&request.model, &res.usage);
                         db::add_usage(
                             &conn,
                             &topic_id,
-                            res.input_tokens,
-                            res.output_tokens,
+                            res.usage.total_input(),
+                            res.usage.output_tokens,
                             cost,
                             &now,
                         )?;
