@@ -107,6 +107,18 @@ pub struct Settings {
     pub theme: String,
 }
 
+/// A single multiple-choice question. Not persisted — quizzes are a
+/// throwaway check on what the spine has covered so far.
+#[derive(Debug, Clone, Serialize)]
+pub struct QuizQuestion {
+    pub question: String,
+    pub question_html: String,
+    pub options: Vec<String>,
+    pub options_html: Vec<String>,
+    pub correct_index: usize,
+    pub explanation_html: String,
+}
+
 fn default_model() -> String {
     "claude-opus-5".to_string()
 }

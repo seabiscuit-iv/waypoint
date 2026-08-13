@@ -43,6 +43,7 @@ export const api = {
 
   // data
   exportTopicMarkdown: (topicId) => invoke('export_topic_markdown', { topicId }),
+  generateQuiz: (topicId, alreadyAsked) => invoke('generate_quiz', { topicId, alreadyAsked }),
   importDocuments: () => invoke('import_documents'),
   readDroppedFiles: (paths) => invoke('read_dropped_files', { paths }),
   backupDatabase: () => invoke('backup_database'),

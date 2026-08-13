@@ -68,6 +68,7 @@ fn main() {
             commands::delete_side_note,
             commands::update_side_note_anchor,
             commands::export_topic_markdown,
+            commands::generate_quiz,
             commands::import_documents,
             commands::read_dropped_files,
             commands::backup_database,

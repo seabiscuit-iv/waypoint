@@ -202,6 +202,74 @@ pub async fn test_api_key(
     }
 }
 
+/// Generates one multiple-choice question over what the topic has covered.
+/// Synchronous from the UI's point of view: no streaming, no persistence —
+/// the result is a throwaway check, not part of the spine.
+#[tauri::command]
+pub async fn generate_quiz(
+    app: AppHandle,
+    topic_id: String,
+    already_asked: Vec<String>,
+) -> Result<QuizQuestion, CmdError> {
+    let key = auth::require_key()?;
+
+    // The DB guard must not be held across the await below.
+    let (request, http) = {
+        let state = app.state::<AppState>();
+        let conn = lock_db(&state);
+        let topic = db::get_topic_row(&conn, &topic_id)?;
+        let steps = db::get_steps(&conn, &topic_id)?;
+        if steps.is_empty() {
+            return Err(CmdError::new(
+                "invalid",
+                "Generate a step or two first \u{2014} there's nothing to quiz on yet.",
+            ));
+        }
+        let ledger = db::ledger_labels(&conn, &topic_id)?;
+        let settings = db::get_settings(&conn)?;
+        let request =
+            prompts::build_quiz_request(&settings, &topic.title, &steps, &ledger, &already_asked);
+        (request, state.http.clone())
+    };
+
+    let res = anthropic::complete_message(&http, &key, &request)
+        .await
+        .map_err(|e| CmdError::new(e.kind(), e.to_string()))?;
+
+    let parsed = prompts::parse_quiz(&res.text);
+
+    {
+        let state = app.state::<AppState>();
+        let conn = lock_db(&state);
+        let cost = anthropic::cost_usd(&request.model, &res.usage);
+        let _ = db::add_usage(
+            &conn,
+            &topic_id,
+            res.usage.total_input(),
+            res.usage.output_tokens,
+            cost,
+            &now_iso(),
+        );
+    }
+    emit_ledger_state(&app, &topic_id);
+
+    let (question, options, correct_index, explanation) = parsed.ok_or_else(|| {
+        CmdError::new(
+            "api",
+            "Couldn't build a question from the model's reply. Try again.",
+        )
+    })?;
+
+    Ok(QuizQuestion {
+        question_html: markdown::render(&question),
+        options_html: options.iter().map(|o| markdown::render(o)).collect(),
+        explanation_html: markdown::render(&explanation),
+        question,
+        options,
+        correct_index,
+    })
+}
+
 // ------------------------------------------------------------- settings --
 
 #[tauri::command]
