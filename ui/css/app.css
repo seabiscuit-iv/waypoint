@@ -176,6 +176,12 @@ textarea { resize: none; line-height: 1.5; }
 }
 .ic.dim { color: var(--ink-3); }
 
+/* Several call sites wrap an icon in a bare <span>. As a flex item that span
+   is blockified, so the inline SVG inside it sits on a text baseline with
+   descender space beneath — the icon renders a couple of px above centre.
+   Collapsing the wrapper onto the icon fixes every such site at once. */
+span:has(> .ic) { display: inline-flex; align-items: center; }
+
 kbd {
   font-family: var(--font-ui);
   font-size: 10.5px;
