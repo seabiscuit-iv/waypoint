@@ -243,7 +243,7 @@ export function openNewTopicModal() {
             attached.splice(attached.indexOf(f), 1);
             renderAttachments();
           },
-        }, el('span', { html: icon('close') }))));
+        }, el('span', { html: icon('x') }))));
     }
     const total = seedLength();
     if (total === 0) {

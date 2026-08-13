@@ -122,27 +122,11 @@ export function copyText(text) {
 
 // ------------------------------------------------------------ icons
 
-const ICONS = {
-  pencil: '<path d="M12.9 3.1a1.6 1.6 0 0 1 2.3 2.3l-8.6 8.6-3.1.8.8-3.1 8.6-8.6Z"/>',
-  refresh: '<path d="M14 8a6 6 0 1 1-1.7-4.2M14 2.5V6h-3.5"/>',
-  copy: '<rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M3 10.5V3.8A1.3 1.3 0 0 1 4.3 2.5H11"/>',
-  doc: '<path d="M9 1.5H4.5A1.5 1.5 0 0 0 3 3v10a1.5 1.5 0 0 0 1.5 1.5h7A1.5 1.5 0 0 0 13 13V5.5L9 1.5Z"/><path d="M9 1.5V5.5H13"/>',
-  dots: '<circle cx="3.2" cy="8" r="1.3" fill="currentColor" stroke="none"/><circle cx="8" cy="8" r="1.3" fill="currentColor" stroke="none"/><circle cx="12.8" cy="8" r="1.3" fill="currentColor" stroke="none"/>',
-  chat: '<path d="M3 3.5h10a1 1 0 0 1 1 1V10a1 1 0 0 1-1 1H8l-3 2.8V11H3a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z"/>',
-  check: '<path d="M3 8.5 6.5 12 13 4.5"/>',
-  alert: '<path d="M8 2.5 14.5 13.5H1.5L8 2.5Z"/><path d="M8 7v3M8 12.2h.01"/>',
-  x: '<path d="M4 4l8 8M12 4l-8 8"/>',
-  trash: '<path d="M3 4.5h10M6.5 4.5V3.4a.9.9 0 0 1 .9-.9h1.2a.9.9 0 0 1 .9.9v1.1m2 0-.5 8a1.4 1.4 0 0 1-1.4 1.3H6.4A1.4 1.4 0 0 1 5 12.5l-.5-8M6.8 7v4M9.2 7v4"/>',
-  spark: '<path d="M8 2v3M8 11v3M2 8h3M11 8h3M4 4l2 2M10 10l2 2M12 4l-2 2M6 10l-2 2"/>',
-  export: '<path d="M8 2.5v7M5.2 6.7 8 9.5l2.8-2.8"/><path d="M3 11.5v.8A1.7 1.7 0 0 0 4.7 14h6.6a1.7 1.7 0 0 0 1.7-1.7v-.8"/>',
-  steer: '<path d="M2.5 8h8M8 4.5 11.5 8 8 11.5"/><circle cx="13.2" cy="8" r="1" fill="currentColor" stroke="none"/>',
-  book: '<path d="M3.5 3h7a1.5 1.5 0 0 1 1.5 1.5V13H5a1.5 1.5 0 0 1-1.5-1.5V3Z"/><path d="M3.5 10.8A1.7 1.7 0 0 1 5.2 9.3H12"/>',
-  plus: '<path d="M8 3v10M3 8h10"/>',
-  stop: '<rect x="4" y="4" width="8" height="8" rx="1.5"/>',
-};
-
+// Names refer to Lucide symbols in the sprite at the top of index.html.
+// Same-document <use> deliberately: WebKit has never handled external
+// sprite references reliably.
 export function icon(name, cls = 'ic') {
-  return `<svg viewBox="0 0 16 16" class="${cls}">${ICONS[name] || ''}</svg>`;
+  return `<svg viewBox="0 0 24 24" class="${cls}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
 }
 
 // ------------------------------------------------------------ toasts

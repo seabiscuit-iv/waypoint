@@ -9,6 +9,32 @@
 </head>
 <body>
 
+  <!-- Lucide icon sprite (ISC). Regenerate with scripts/build-sprite.mjs. -->
+  <svg id="icon-sprite" aria-hidden="true" style="display:none">
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14" /><path d="M12 5v14" /></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34" /><circle cx="11" cy="11" r="8" /></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" /></symbol>
+    <symbol id="i-keyboard" viewBox="0 0 24 24"><path d="M10 8h.01" /><path d="M12 12h.01" /><path d="M14 8h.01" /><path d="M16 12h.01" /><path d="M18 8h.01" /><path d="M6 8h.01" /><path d="M7 16h10" /><path d="M8 12h.01" /><rect width="20" height="16" x="2" y="4" rx="2" /></symbol>
+    <symbol id="i-offline" viewBox="0 0 24 24"><path d="M12 20h.01" /><path d="M8.5 16.429a5 5 0 0 1 7 0" /><path d="M5 12.859a10 10 0 0 1 5.17-2.69" /><path d="M19 12.859a10 10 0 0 0-2.007-1.523" /><path d="M2 8.82a15 15 0 0 1 4.177-2.643" /><path d="M22 8.82a15 15 0 0 0-11.288-3.764" /><path d="m2 2 20 20" /></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 5v16" /><path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z" /></symbol>
+    <symbol id="i-quiz" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></symbol>
+    <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 15V3" /><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="m7 10 5 5 5-5" /></symbol>
+    <symbol id="i-chevron-up" viewBox="0 0 24 24"><path d="m18 15-6-6-6 6" /></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" /></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M10 11v6" /><path d="M14 11v6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" /></symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /><path d="m15 5 4 4" /></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" /><path d="M14 2v5a1 1 0 0 0 1 1h5" /><path d="M10 9H8" /><path d="M16 13H8" /><path d="M16 17H8" /></symbol>
+    <symbol id="i-dots" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle cx="5" cy="12" r="1" /></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4" /><path d="M12 17h.01" /></symbol>
+    <symbol id="i-steer" viewBox="0 0 24 24"><path d="m15 10 5 5-5 5" /><path d="M4 4v7a4 4 0 0 0 4 4h12" /></symbol>
+  </svg>
+
   <!-- ======================= App shell ======================= -->
   <div id="app" class="app-shell" hidden>
 
@@ -25,7 +51,7 @@
           <span class="brand-name">Waypoint</span>
         </div>
         <button id="btn-new-topic" class="btn btn-primary btn-block">
-          <svg viewBox="0 0 16 16" class="ic"><path d="M8 3v10M3 8h10" /></svg>
+          <svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><use href="#i-plus"/></svg>
           New topic
         </button>
       </div>
@@ -41,10 +67,10 @@
         <div id="usage-total" class="usage-total" title="Estimated API spend across all topics"></div>
         <div class="foot-btns">
           <button id="btn-shortcuts" class="icon-btn" title="Keyboard shortcuts (?)">
-            <svg viewBox="0 0 20 20" class="ic"><rect x="2" y="5" width="16" height="10" rx="2"/><path d="M5 12h10M5 8.5h.01M8 8.5h.01M11 8.5h.01M14 8.5h.01"/></svg>
+            <svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><use href="#i-keyboard"/></svg>
           </button>
           <button id="btn-settings" class="icon-btn" title="Settings (Ctrl+,)">
-            <svg viewBox="0 0 24 24" class="ic ic-24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><use href="#i-settings"/></svg>
           </button>
         </div>
       </div>
@@ -52,7 +78,7 @@
 
     <main id="main" class="main">
       <div id="offline-banner" class="offline-banner" hidden>
-        <svg viewBox="0 0 16 16" class="ic"><path d="M2 6.5a8.5 8.5 0 0 1 12 0M4.5 9a5 5 0 0 1 7 0M7 11.5a2 2 0 0 1 2 0"/><path d="M2 2l12 12"/></svg>
+        <svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><use href="#i-offline"/></svg>
         You’re offline — steps and side notes can’t be generated until the connection returns.
       </div>
 
@@ -82,27 +108,27 @@
             </div>
             <span class="th-sep"></span>
             <button id="btn-search" class="icon-btn" title="Search in topic (Ctrl+F)">
-              <svg viewBox="0 0 20 20" class="ic"><circle cx="9" cy="9" r="5.5"/><path d="M13.2 13.2 17 17"/></svg>
+              <svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><use href="#i-search"/></svg>
             </button>
             <button id="btn-ledger" class="icon-btn" title="Concept ledger">
-              <svg viewBox="0 0 20 20" class="ic"><path d="M4 3.5h9a2 2 0 0 1 2 2v11H6a2 2 0 0 1-2-2v-11Z"/><path d="M4 13.5a2 2 0 0 1 2-2h9M7.5 7h4.5"/></svg>
+              <svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><use href="#i-book"/></svg>
             </button>
             <button id="btn-quiz" class="icon-btn" title="Quick quiz on what you've covered">
-              <svg viewBox="0 0 20 20" class="ic"><path d="M7.4 7.3a2.6 2.6 0 1 1 3.4 2.5c-.5.2-.8.7-.8 1.2v.6"/><path d="M10 14.6h.01"/><circle cx="10" cy="10" r="7.5"/></svg>
+              <svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><use href="#i-quiz"/></svg>
             </button>
             <button id="btn-export" class="icon-btn" title="Export as Markdown">
-              <svg viewBox="0 0 20 20" class="ic"><path d="M10 3v9M6.5 8.5 10 12l3.5-3.5"/><path d="M4 14.5v1a1.5 1.5 0 0 0 1.5 1.5h9a1.5 1.5 0 0 0 1.5-1.5v-1"/></svg>
+              <svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><use href="#i-export"/></svg>
             </button>
           </div>
         </header>
 
         <div id="search-bar" class="search-bar" hidden>
-          <svg viewBox="0 0 20 20" class="ic dim"><circle cx="9" cy="9" r="5.5"/><path d="M13.2 13.2 17 17"/></svg>
+          <svg viewBox="0 0 24 24" class="ic dim" aria-hidden="true"><use href="#i-search"/></svg>
           <input id="search-input" type="text" placeholder="Search steps and side notes…" autocomplete="off" spellcheck="false"/>
           <span id="search-count" class="search-count"></span>
-          <button id="search-prev" class="icon-btn sm" title="Previous (Shift+Enter)"><svg viewBox="0 0 16 16" class="ic"><path d="M4 10l4-4 4 4"/></svg></button>
-          <button id="search-next" class="icon-btn sm" title="Next (Enter)"><svg viewBox="0 0 16 16" class="ic"><path d="M4 6l4 4 4-4"/></svg></button>
-          <button id="search-close" class="icon-btn sm" title="Close (Esc)"><svg viewBox="0 0 16 16" class="ic"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
+          <button id="search-prev" class="icon-btn sm" title="Previous (Shift+Enter)"><svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><use href="#i-chevron-up"/></svg></button>
+          <button id="search-next" class="icon-btn sm" title="Next (Enter)"><svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
+          <button id="search-close" class="icon-btn sm" title="Close (Esc)"><svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
         </div>
 
         <div id="content-area" class="content-area">
@@ -118,7 +144,7 @@
                 </div>
                 <div id="composer" class="composer">
                   <button id="btn-plus" class="plus-btn" title="Next step (Ctrl+Enter)">
-                    <span class="plus-circle"><svg viewBox="0 0 16 16" class="ic"><path d="M8 3v10M3 8h10"/></svg></span>
+                    <span class="plus-circle"><svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><use href="#i-plus"/></svg></span>
                     <span class="plus-label">Next step</span>
                   </button>
                   <div id="composer-input-wrap" class="composer-input-wrap" hidden>
@@ -129,7 +155,7 @@
                     </div>
                   </div>
                   <button id="btn-stop-gen" class="btn btn-ghost btn-sm stop-btn" hidden>
-                    <svg viewBox="0 0 16 16" class="ic"><rect x="4" y="4" width="8" height="8" rx="1.5"/></svg>
+                    <svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><use href="#i-stop"/></svg>
                     Stop
                   </button>
                 </div>
@@ -152,11 +178,11 @@
           <aside id="ledger-drawer" class="drawer" hidden>
             <header class="drawer-head">
               <h3>Concept ledger</h3>
-              <button id="ledger-close" class="icon-btn sm"><svg viewBox="0 0 16 16" class="ic"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
+              <button id="ledger-close" class="icon-btn sm"><svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
             </header>
             <p class="drawer-sub">Everything covered so far — steps and resolved side notes. Waypoint feeds this into each new step so nothing gets re-taught.</p>
             <div class="drawer-filter">
-              <svg viewBox="0 0 16 16" class="ic"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg>
+              <svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><use href="#i-search"/></svg>
               <input id="ledger-filter" type="text" placeholder="Filter concepts…" autocomplete="off" spellcheck="false" />
             </div>
             <div id="ledger-list" class="ledger-list"></div>
@@ -172,9 +198,9 @@
               <div class="np-actions">
                 <button id="np-resolve" class="btn btn-ghost btn-sm"></button>
                 <button id="np-delete" class="icon-btn sm" title="Delete side note">
-                  <svg viewBox="0 0 20 20" class="ic"><path d="M4 6h12M8 6V4.5A1.5 1.5 0 0 1 9.5 3h1A1.5 1.5 0 0 1 12 4.5V6m2.5 0-.7 9.2a1.8 1.8 0 0 1-1.8 1.8H8a1.8 1.8 0 0 1-1.8-1.8L5.5 6M8.5 9v5M11.5 9v5"/></svg>
+                  <svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><use href="#i-trash"/></svg>
                 </button>
-                <button id="np-close" class="icon-btn sm" title="Close (Esc)"><svg viewBox="0 0 16 16" class="ic"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
+                <button id="np-close" class="icon-btn sm" title="Close (Esc)"><svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
               </div>
             </header>
             <div id="np-thread" class="np-thread"></div>
@@ -196,7 +222,7 @@
             </div>
             <div class="nm-btns">
               <button id="nm-goto" class="btn btn-ghost btn-sm">Open in spine</button>
-              <button id="nm-close" class="icon-btn" title="Back to map (Esc)"><svg viewBox="0 0 16 16" class="ic"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
+              <button id="nm-close" class="icon-btn" title="Back to map (Esc)"><svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
             </div>
           </header>
           <div id="nm-body" class="nm-body"></div>
@@ -246,7 +272,7 @@
   <!-- ======================= Floating bits ======================= -->
   <div id="selection-popover" class="selection-popover" hidden>
     <button id="btn-ask-selection">
-      <svg viewBox="0 0 16 16" class="ic"><path d="M3 3.5h10a1 1 0 0 1 1 1V10a1 1 0 0 1-1 1H8l-3 2.8V11H3a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z"/></svg>
+      <svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><use href="#i-chat"/></svg>
       Ask about this
       <kbd>A</kbd>
     </button>
