@@ -1,6 +1,6 @@
 // Boot, backend-event routing, global keyboard shortcuts, offline handling.
 
-import { qs, toastErr, isMenuOpen, closeMenu, isModalOpen, closeTopModal } from './util.js';
+import { qs, qsa, toastErr, isMenuOpen, closeMenu, isModalOpen, closeTopModal, modKey, MOD_LABEL } from './util.js';
 import { api, onEvent } from './api.js';
 import { state, stashEarlyEvent } from './state.js';
 import * as spine from './spine.js';
@@ -36,6 +36,7 @@ async function boot() {
   window.addEventListener('wp:ledger-changed', () => topicsView.renderLedger());
 
   sidebar.renderTopics();
+  localizeShortcutHints();
   wireBackendEvents();
   wireKeyboard();
   wireOnline();
@@ -52,6 +53,14 @@ function enterApp() {
   qs('#app').hidden = false;
   if (state.topics.length > 0 && !state.currentTopicId) {
     selectTopic(state.topics[0].id).catch(toastErr);
+  }
+}
+
+/** Tooltips are authored with "Ctrl"; on macOS they should read "⌘". */
+function localizeShortcutHints() {
+  if (MOD_LABEL === 'Ctrl') return;
+  for (const node of qsa('[title*="Ctrl+"]')) {
+    node.title = node.title.replace(/Ctrl\+/g, MOD_LABEL);
   }
 }
 
@@ -112,22 +121,23 @@ function wireKeyboard() {
 
     if (!state.auth.configured) return;
 
-    if (e.ctrlKey && e.key === 'Enter') {
+    const mod = modKey(e);
+    if (mod && e.key === 'Enter') {
       e.preventDefault();
       spine.advanceViaKeyboard();
       return;
     }
-    if (e.ctrlKey && (e.key === 'f' || e.key === 'F')) {
+    if (mod && (e.key === 'f' || e.key === 'F')) {
       e.preventDefault();
       if (state.topic) search.openSearch();
       return;
     }
-    if (e.ctrlKey && e.key === ',') {
+    if (mod && e.key === ',') {
       e.preventDefault();
       settings.openSettings();
       return;
     }
-    if (e.ctrlKey && (e.key === 'g' || e.key === 'G')) {
+    if (mod && (e.key === 'g' || e.key === 'G')) {
       e.preventDefault();
       toggleView();
       return;

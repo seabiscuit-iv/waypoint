@@ -4,6 +4,23 @@ use keyring::Entry;
 const SERVICE: &str = "waypoint";
 const USER: &str = "anthropic_api_key";
 
+/// Human name of the OS credential store, so the UI can say where the key
+/// actually lives instead of naming one platform's.
+pub fn store_name() -> &'static str {
+    #[cfg(target_os = "macos")]
+    {
+        "the macOS Keychain"
+    }
+    #[cfg(target_os = "windows")]
+    {
+        "Windows Credential Manager"
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    {
+        "your system keyring"
+    }
+}
+
 fn entry() -> Result<Entry, CmdError> {
     Entry::new(SERVICE, USER).map_err(CmdError::from)
 }

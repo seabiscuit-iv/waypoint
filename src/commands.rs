@@ -52,6 +52,8 @@ fn clean_opt(s: Option<String>) -> Option<String> {
 pub struct AuthStatus {
     pub configured: bool,
     pub masked_key: Option<String>,
+    /// Where the key is stored on this platform, for display.
+    pub store_name: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -147,14 +149,17 @@ fn mask_key(k: &str) -> String {
 
 #[tauri::command]
 pub fn get_auth_status() -> AuthStatus {
+    let store_name = auth::store_name().to_string();
     match auth::get_key() {
         Some(k) => AuthStatus {
             configured: true,
             masked_key: Some(mask_key(&k)),
+            store_name,
         },
         None => AuthStatus {
             configured: false,
             masked_key: None,
+            store_name,
         },
     }
 }

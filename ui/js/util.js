@@ -3,6 +3,18 @@
 export const qs = (sel, root = document) => root.querySelector(sel);
 export const qsa = (sel, root = document) => [...root.querySelectorAll(sel)];
 
+// Platform: macOS drives Cmd rather than Ctrl for app shortcuts, so the
+// modifier is picked once here and used for both handling and display.
+export const IS_MAC = /Mac|iPhone|iPad/.test(
+  navigator.userAgentData?.platform || navigator.platform || navigator.userAgent,
+);
+export const MOD_LABEL = IS_MAC ? '⌘' : 'Ctrl';
+
+/** True when the platform's app-shortcut modifier is held. */
+export function modKey(e) {
+  return IS_MAC ? e.metaKey : e.ctrlKey;
+}
+
 /** Element builder: el('div', { class: 'x', onclick: fn }, child, ...) */
 export function el(tag, attrs = {}, ...children) {
   const node = document.createElement(tag);

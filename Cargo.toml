@@ -14,7 +14,7 @@ serde_json = "1"
 uuid = { version = "1", features = ["v4"] }
 chrono = { version = "0.4", features = ["serde"] }
 rusqlite = { version = "0.32", features = ["bundled", "backup"] }
-keyring = { version = "3", features = ["windows-native"] }
+keyring = "3"
 reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "rustls-tls"] }
 tokio = { version = "1", features = ["sync", "time", "macros"] }
 futures-util = "0.3"
@@ -25,6 +25,19 @@ pulldown-latex = "0.8.0"
 pdf-extract = "0.12.0"
 zip = "8.6.0"
 quick-xml = "0.41.0"
+
+# The OS credential store is selected per platform: Credential Manager on
+# Windows, Keychain on macOS, Secret Service on Linux. Without one of these
+# features keyring builds with no backend and every key operation fails at
+# runtime rather than at compile time.
+[target.'cfg(windows)'.dependencies]
+keyring = { version = "3", features = ["windows-native"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3", features = ["apple-native"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }
 
 [profile.release]
 strip = true

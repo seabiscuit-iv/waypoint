@@ -1,7 +1,7 @@
 // Auth gate (§5.1), settings modal (§5.1/5.3, backup §5.7, usage §5.9),
 // theme handling, and the keyboard-shortcut cheat sheet.
 
-import { qs, el, fmtCost, fmtTokens, toast, toastErr, openModal, confirmModal } from '../util.js';
+import { qs, el, fmtCost, fmtTokens, toast, toastErr, openModal, confirmModal, MOD_LABEL } from '../util.js';
 import { api } from '../api.js';
 import { state } from '../state.js';
 
@@ -44,6 +44,7 @@ let onEnteredCb = null;
 
 export function initGate(onEntered) {
   onEnteredCb = onEntered;
+  qs('#gate-store-name').textContent = state.auth.store_name;
   qs('#gate-save').addEventListener('click', () => connect());
   qs('#gate-key').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') connect();
@@ -72,7 +73,7 @@ async function connect() {
   }
   qs('#gate-anyway').hidden = true;
   qs('#gate-save').disabled = true;
-  setGateStatus('busy', 'Storing the key in Windows Credential Manager and testing the connection…');
+  setGateStatus('busy', `Storing the key in ${state.auth.store_name} and testing the connection…`);
   try {
     state.auth = await api.setApiKey(key);
     const res = await api.testApiKey(null);
@@ -118,7 +119,7 @@ function connectionSection() {
       statusRow.append(
         el('span', { class: 'dot-ok' }),
         el('span', { class: 'mono', text: state.auth.masked_key || '•••' }),
-        el('span', { class: 'dim', text: 'stored in Credential Manager' }));
+        el('span', { class: 'dim', text: `stored in ${state.auth.store_name}` }));
     } else {
       statusRow.append(
         el('span', { class: 'dot-bad' }),
@@ -302,15 +303,15 @@ function dataSection() {
 // ------------------------------------------------------------- shortcuts
 
 const SHORTCUTS = [
-  ['Next step (unprompted)', ['Ctrl', 'Enter']],
+  ['Next step (unprompted)', [MOD_LABEL, 'Enter']],
   ['Steer the next step', ['N']],
   ['Ask about selection', ['A']],
-  ['Search in topic', ['Ctrl', 'F']],
+  ['Search in topic', [MOD_LABEL, 'F']],
   ['Toggle spine / map', ['G']],
   ['Step / node down · up', ['J', 'K']],
   ['Open focused node (map)', ['Enter']],
   ['Re-centre the map', ['0']],
-  ['Settings', ['Ctrl', ',']],
+  ['Settings', [MOD_LABEL, ',']],
   ['Close / back', ['Esc']],
   ['This cheat sheet', ['?']],
 ];
