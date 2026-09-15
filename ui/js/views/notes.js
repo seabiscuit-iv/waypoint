@@ -274,10 +274,14 @@ function renderPanel() {
   deleteBtn.hidden = false;
 
   for (const msg of note.messages) {
-    thread.append(el('div', {
+    const bubble = el('div', {
       class: 'np-msg ' + (msg.role === 'user' ? 'user' : 'assistant'),
       html: msg.html,
-    }));
+    });
+    if (state.reviewingMessages.has(msg.id)) {
+      bubble.querySelectorAll('.diagram').forEach((d) => d.replaceWith(el('div', { class: 'diagram-pending' })));
+    }
+    thread.append(bubble);
   }
 
   const generating = state.noteGen?.noteId === note.id;
@@ -455,6 +459,17 @@ function resetNoteStreamBuffer() {
   queuedNoteHtml = null;
 }
 
+/** A side-note answer's diagram review finished (revised or not). */
+export function onMessageUpdated(payload) {
+  state.reviewingMessages.delete(payload.message.id);
+  if (!state.topic || state.topic.id !== payload.topic_id) return;
+  const note = findNote(payload.note_id);
+  const i = note ? note.messages.findIndex((m) => m.id === payload.message.id) : -1;
+  if (i < 0) return;
+  note.messages[i] = payload.message;
+  if (panelCtx?.mode === 'view' && panelCtx.noteId === note.id) renderPanel();
+}
+
 export function handleGenEvent(name, payload) {
   const g = state.noteGen;
   if (!g || payload.gen_id !== g.genId) return false;
@@ -468,6 +483,7 @@ export function handleGenEvent(name, payload) {
     case 'note:done': {
       state.noteGen = null;
       resetNoteStreamBuffer();
+      if (payload.reviewing) state.reviewingMessages.add(payload.message.id);
       const note = findNote(payload.note_id);
       if (note && state.topic && state.topic.id === payload.topic_id) {
         note.messages.push(payload.message);

@@ -9,6 +9,7 @@ mod error;
 mod markdown;
 mod models;
 mod prompts;
+mod svg;
 
 use std::collections::HashMap;
 use std::path::PathBuf;

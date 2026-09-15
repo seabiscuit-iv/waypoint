@@ -25,6 +25,8 @@ pulldown-latex = "0.8.0"
 pdf-extract = "0.12.0"
 zip = "8.6.0"
 quick-xml = "0.41.0"
+resvg = { version = "0.48.1", default-features = false, features = ["text", "system-fonts", "memmap-fonts"] }
+base64 = "0.22"
 
 # The OS credential store is selected per platform: Credential Manager on
 # Windows, Keychain on macOS, Secret Service on Linux. Without one of these

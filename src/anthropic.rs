@@ -16,20 +16,34 @@ pub const ANTHROPIC_VERSION: &str = "2023-06-01";
 #[derive(Debug, Clone, Serialize)]
 pub struct ChatMessage {
     pub role: String,
-    pub content: String,
+    pub content: MessageContent,
+}
+
+/// A plain string, or content blocks when a message carries images.
+#[derive(Debug, Clone, Serialize)]
+#[serde(untagged)]
+pub enum MessageContent {
+    Text(String),
+    Blocks(Vec<Value>),
 }
 
 impl ChatMessage {
     pub fn user(content: impl Into<String>) -> Self {
         Self {
             role: "user".to_string(),
-            content: content.into(),
+            content: MessageContent::Text(content.into()),
         }
     }
     pub fn assistant(content: impl Into<String>) -> Self {
         Self {
             role: "assistant".to_string(),
-            content: content.into(),
+            content: MessageContent::Text(content.into()),
+        }
+    }
+    pub fn user_blocks(blocks: Vec<Value>) -> Self {
+        Self {
+            role: "user".to_string(),
+            content: MessageContent::Blocks(blocks),
         }
     }
 }

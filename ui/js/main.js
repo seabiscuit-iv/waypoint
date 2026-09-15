@@ -94,6 +94,17 @@ function wireBackendEvents() {
     refreshTopicList();
   });
 
+  onEvent('step:updated', (payload) => {
+    state.reviewingSteps.delete(payload.step.id);
+    if (!state.topic || state.topic.id !== payload.topic_id) return;
+    const i = state.topic.steps.findIndex((s) => s.id === payload.step.id);
+    if (i < 0) return;
+    state.topic.steps[i] = payload.step;
+    spine.refreshStep(payload.step.id);
+  });
+
+  onEvent('note:updated', (payload) => notes.onMessageUpdated(payload));
+
   onEvent('db:restored', () => {
     location.reload();
   });

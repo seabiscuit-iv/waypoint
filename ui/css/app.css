@@ -40,6 +40,12 @@
   --font-content: "Iowan Old Style", Georgia, Cambria, "Times New Roman", serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", "Cascadia Mono", Consolas, "Courier New", monospace;
   --sidebar-w: 272px;
+  --dg-red: #C2453A;
+  --dg-orange: #CF6D1D;
+  --dg-yellow: #B8890F;
+  --dg-green: #3A8A4F;
+  --dg-blue: #2F6DB5;
+  --dg-purple: #7A55B0;
 }
 
 :root[data-theme="dark"] {
@@ -70,6 +76,12 @@
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.25), 0 4px 14px rgba(0, 0, 0, 0.25);
   --shadow-2: 0 4px 10px rgba(0, 0, 0, 0.35), 0 18px 50px rgba(0, 0, 0, 0.45);
   --shadow-pop: 0 2px 6px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.5);
+  --dg-red: #E57368;
+  --dg-orange: #F0954A;
+  --dg-yellow: #F2C14E;
+  --dg-green: #6BBF7F;
+  --dg-blue: #6FA3E0;
+  --dg-purple: #A98BDD;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -101,6 +113,12 @@
     --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.25), 0 4px 14px rgba(0, 0, 0, 0.25);
     --shadow-2: 0 4px 10px rgba(0, 0, 0, 0.35), 0 18px 50px rgba(0, 0, 0, 0.45);
     --shadow-pop: 0 2px 6px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.5);
+    --dg-red: #E57368;
+    --dg-orange: #F0954A;
+    --dg-yellow: #F2C14E;
+    --dg-green: #6BBF7F;
+    --dg-blue: #6FA3E0;
+    --dg-purple: #A98BDD;
   }
 }
 
@@ -679,6 +697,44 @@ kbd {
   margin: 0 0 0.85em;
 }
 .step-content pre code { background: none; border: none; padding: 0; font-size: 12.5px; line-height: 1.55; }
+/* diagrams: model-written SVG rebuilt by src/svg.rs; colours via currentColor */
+.diagram { margin: 0.4em 0 1em; color: var(--ink); font-family: var(--font-content); }
+.diagram svg { display: block; margin: 0 auto; max-width: 100%; max-height: 460px; height: auto; }
+/* Labels sit on a page-coloured halo so lines running behind them stay legible. */
+.diagram { --dg-halo: var(--surface); }
+.np-msg .diagram { --dg-halo: var(--surface-2); }
+.diagram svg text { paint-order: stroke; stroke: var(--dg-halo); stroke-width: 4px; stroke-linejoin: round; }
+.diagram .dg-label {
+  position: relative;
+  width: max-content;
+  white-space: nowrap;
+  line-height: 1.2;
+  padding: 0 3px;
+  border-radius: 3px;
+  background: var(--dg-halo);
+}
+.diagram .dg-ink { color: var(--ink); }
+.diagram .dg-muted { color: var(--ink-3); }
+.diagram .dg-accent { color: var(--accent); }
+.diagram .dg-paper { color: var(--surface); }
+.diagram .dg-red { color: var(--dg-red); }
+.diagram .dg-orange { color: var(--dg-orange); }
+.diagram .dg-yellow { color: var(--dg-yellow); }
+.diagram .dg-green { color: var(--dg-green); }
+.diagram .dg-blue { color: var(--dg-blue); }
+.diagram .dg-purple { color: var(--dg-purple); }
+.diagram-pending { margin: 0.4em 0 1em; }
+.diagram-pending::before {
+  content: "Drawing diagram\2026";
+  display: block;
+  padding: 36px 12px;
+  text-align: center;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--ink-3);
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+}
 .math-inline { white-space: nowrap; }
 .math-block {
   display: block;
@@ -986,6 +1042,7 @@ math mtext { font-family: var(--font-content); }
   border: 0;
 }
 .np-quote math { font-style: normal; }
+.np-quote :is(.diagram, .diagram-pending) { display: none; }
 .np-quote math[display="block"] { display: inline math; }
 .np-actions { display: flex; align-items: center; gap: 2px; flex: none; }
 
@@ -1699,6 +1756,8 @@ math mtext { font-family: var(--font-content); }
 .dot-bad { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); flex: none; }
 
 .set-note { font-size: 11.5px; color: var(--ink-3); line-height: 1.5; margin-top: 8px; }
+.set-check { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+.set-check input { accent-color: var(--accent); width: 15px; height: 15px; }
 .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
 
 .usage-grid {

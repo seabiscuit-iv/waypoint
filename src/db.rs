@@ -413,6 +413,22 @@ pub fn replace_step(
     Ok(())
 }
 
+/// Swaps in revised content only if the step still holds `expected`, so a
+/// background revision never overwrites an edit or a regeneration. Leaves
+/// updated_at alone: this isn't the learner's edit. Returns whether it applied.
+pub fn revise_step_content(
+    conn: &Connection,
+    step_id: &str,
+    expected: &str,
+    content: &str,
+) -> rusqlite::Result<bool> {
+    let changed = conn.execute(
+        "UPDATE spine_steps SET content = ?3 WHERE id = ?1 AND content = ?2",
+        params![step_id, expected, content],
+    )?;
+    Ok(changed > 0)
+}
+
 pub fn update_step_content(
     conn: &Connection,
     step_id: &str,
@@ -536,6 +552,20 @@ pub fn insert_note_message(
         params![id, note_id, role, content, now],
     )?;
     Ok(())
+}
+
+/// Same guard as `revise_step_content`, for a side-note message.
+pub fn revise_note_message_content(
+    conn: &Connection,
+    id: &str,
+    expected: &str,
+    content: &str,
+) -> rusqlite::Result<bool> {
+    let changed = conn.execute(
+        "UPDATE side_note_messages SET content = ?3 WHERE id = ?1 AND content = ?2",
+        params![id, expected, content],
+    )?;
+    Ok(changed > 0)
 }
 
 pub fn get_note_message(conn: &Connection, id: &str) -> rusqlite::Result<SideNoteMessage> {

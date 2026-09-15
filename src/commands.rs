@@ -23,6 +23,7 @@ use crate::error::CmdError;
 use crate::markdown;
 use crate::models::*;
 use crate::prompts;
+use crate::svg;
 use crate::AppState;
 
 const ALLOWED_MODELS: [&str; 3] = ["claude-opus-5", "claude-sonnet-5", "claude-haiku-4-5"];
@@ -117,6 +118,8 @@ struct SpineDoneEvent {
     kind: String,
     step: SpineStep,
     usage: UsageTotals,
+    /// A diagram review follows; its result arrives as `step:updated`.
+    reviewing: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -126,6 +129,8 @@ struct NoteDoneEvent {
     note_id: String,
     message: SideNoteMessage,
     usage: UsageTotals,
+    /// A diagram review follows; its result arrives as `note:updated`.
+    reviewing: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -511,6 +516,142 @@ fn spawn_ledger_extraction(
     });
 }
 
+#[derive(Debug, Clone, Serialize)]
+struct StepUpdatedEvent {
+    topic_id: String,
+    step: SpineStep,
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct NoteMessageUpdatedEvent {
+    topic_id: String,
+    note_id: String,
+    message: SideNoteMessage,
+}
+
+/// Where reviewed diagrams live: a spine step or a side-note message.
+enum ReviewTarget {
+    Step { step_id: String },
+    NoteMessage { note_id: String, message_id: String },
+}
+
+/// Whether finished content's diagrams go through `spawn_diagram_review`:
+/// the experimental diagrams setting is on and there's something to check.
+/// The UI holds them back until that review reports in with `step:updated`
+/// or `note:updated`.
+fn needs_diagram_review(app: &AppHandle, content: &str) -> bool {
+    let enabled = {
+        let state = app.state::<AppState>();
+        let conn = lock_db(&state);
+        db::get_settings(&conn).is_ok_and(|s| s.diagrams)
+    };
+    enabled && !reviewable_diagrams(content).is_empty()
+}
+
+/// Diagrams that can be corrected in place: their contents range and source.
+/// `needs_diagram_review` and `spawn_diagram_review` must agree on this, or
+/// the UI would wait for a review that never starts.
+fn reviewable_diagrams(content: &str) -> Vec<(std::ops::Range<usize>, String)> {
+    markdown::svg_blocks(content)
+        .into_iter()
+        .filter_map(|b| Some((b.contents?, b.source)))
+        .collect()
+}
+
+/// Fire-and-forget diagram check: each svg block in finished content is
+/// rendered to an image and sent back to the model, and any corrected SVG is
+/// saved in place. Failures leave the content exactly as generated.
+fn spawn_diagram_review(app: AppHandle, topic_id: String, target: ReviewTarget, content: String, model: String) {
+    let blocks = reviewable_diagrams(&content);
+    if blocks.is_empty() {
+        return;
+    }
+    tauri::async_runtime::spawn(async move {
+        if let Some(key) = auth::get_key() {
+            let revised = review_diagrams(&app, &topic_id, &key, &content, &model, blocks).await;
+            if revised != content {
+                let state = app.state::<AppState>();
+                let conn = lock_db(&state);
+                let _ = match &target {
+                    ReviewTarget::Step { step_id } => {
+                        db::revise_step_content(&conn, step_id, &content, &revised)
+                    }
+                    ReviewTarget::NoteMessage { message_id, .. } => {
+                        db::revise_note_message_content(&conn, message_id, &content, &revised)
+                    }
+                };
+            }
+            emit_ledger_state(&app, &topic_id);
+        }
+
+        // Always report back, changed or not: the UI is holding these
+        // diagrams until this arrives.
+        let state = app.state::<AppState>();
+        match target {
+            ReviewTarget::Step { step_id } => {
+                let step = db::get_step(&lock_db(&state), &step_id).ok();
+                if let Some(step) = step {
+                    let _ = app.emit("step:updated", StepUpdatedEvent { topic_id, step });
+                }
+            }
+            ReviewTarget::NoteMessage { note_id, message_id } => {
+                let message = db::get_note_message(&lock_db(&state), &message_id).ok();
+                if let Some(message) = message {
+                    let _ = app.emit(
+                        "note:updated",
+                        NoteMessageUpdatedEvent { topic_id, note_id, message },
+                    );
+                }
+            }
+        }
+    });
+}
+
+/// The step content with every diagram the reviewer corrected swapped in.
+async fn review_diagrams(
+    app: &AppHandle,
+    topic_id: &str,
+    key: &str,
+    content: &str,
+    model: &str,
+    blocks: Vec<(std::ops::Range<usize>, String)>,
+) -> String {
+    let http = app.state::<AppState>().http.clone();
+
+    // Last block first, so earlier byte ranges stay valid as later blocks
+    // change length.
+    let mut revised = content.to_string();
+    for (range, source) in blocks.into_iter().rev() {
+        let render_src = source.clone();
+        let Ok(Some(png)) =
+            tauri::async_runtime::spawn_blocking(move || svg::preview_png(&render_src)).await
+        else {
+            continue;
+        };
+        let request = prompts::build_diagram_review_request(model, content, &source, &png);
+        let Ok(res) = anthropic::complete_message(&http, key, &request).await else {
+            continue;
+        };
+        {
+            let state = app.state::<AppState>();
+            let conn = lock_db(&state);
+            let cost = anthropic::cost_usd(&request.model, &res.usage);
+            let _ = db::add_usage(
+                &conn,
+                topic_id,
+                res.usage.total_input(),
+                res.usage.output_tokens,
+                cost,
+                &now_iso(),
+            );
+        }
+        if let Some(fixed) = prompts::parse_diagram_review(&res.text, &source) {
+            revised.replace_range(range, &fixed);
+        }
+    }
+    revised
+}
+
 #[derive(Clone, Copy, PartialEq)]
 enum SpineMode {
     Append,
@@ -597,6 +738,7 @@ fn spawn_spine_generation(
                 };
                 match persisted {
                     Ok((step, usage)) => {
+                        let reviewing = needs_diagram_review(&app, &step.content);
                         let _ = app.emit(
                             "gen:done",
                             SpineDoneEvent {
@@ -605,10 +747,20 @@ fn spawn_spine_generation(
                                 kind,
                                 step: step.clone(),
                                 usage,
+                                reviewing,
                             },
                         );
                         if mode == SpineMode::Replace {
                             emit_ledger_state(&app, &topic_id);
+                        }
+                        if reviewing {
+                            spawn_diagram_review(
+                                app.clone(),
+                                topic_id.clone(),
+                                ReviewTarget::Step { step_id: step.id.clone() },
+                                step.content.clone(),
+                                request.model.clone(),
+                            );
                         }
                         spawn_ledger_extraction(
                             app,
@@ -704,16 +856,27 @@ fn spawn_note_generation(
                 };
                 match persisted {
                     Ok((message, usage)) => {
+                        let reviewing = needs_diagram_review(&app, &message.content);
                         let _ = app.emit(
                             "note:done",
                             NoteDoneEvent {
                                 gen_id,
-                                topic_id,
-                                note_id,
-                                message,
+                                topic_id: topic_id.clone(),
+                                note_id: note_id.clone(),
+                                message: message.clone(),
                                 usage,
+                                reviewing,
                             },
                         );
+                        if reviewing {
+                            spawn_diagram_review(
+                                app,
+                                topic_id,
+                                ReviewTarget::NoteMessage { note_id, message_id: message.id },
+                                message.content,
+                                request.model.clone(),
+                            );
+                        }
                     }
                     Err(e) => {
                         let _ = app.emit(
@@ -903,7 +1066,7 @@ pub fn create_side_note(
         db::insert_note_message(&conn, &new_id(), &note_id, "user", &question, &now)?;
         let note = db::get_note(&conn, &note_id)?;
         let request = prompts::build_side_note_request(
-            &settings.model,
+            &settings,
             &topic.title,
             &step.content,
             &quoted,
@@ -939,7 +1102,7 @@ pub fn reply_side_note(
         db::insert_note_message(&conn, &new_id(), &note_id, "user", &content, &now_iso())?;
         let note = db::get_note(&conn, &note_id)?;
         let request = prompts::build_side_note_request(
-            &settings.model,
+            &settings,
             &topic.title,
             &step.content,
             &note.quoted_text,
@@ -970,7 +1133,7 @@ pub fn retry_side_note(app: AppHandle, note_id: String) -> Result<NoteGenStarted
         let topic = db::get_topic_row(&conn, &note.topic_id)?;
         let settings = db::get_settings(&conn)?;
         let request = prompts::build_side_note_request(
-            &settings.model,
+            &settings,
             &topic.title,
             &step.content,
             &note.quoted_text,
@@ -1067,7 +1230,29 @@ fn sanitize_filename(name: &str) -> String {
     }
 }
 
-fn build_export_markdown(t: &TopicDetail) -> String {
+/// Diagrams pulled out of an export, written as files beside the Markdown.
+struct ExportDiagrams {
+    /// Folder name, relative to the Markdown file.
+    dir: String,
+    /// (file name, standalone SVG)
+    files: Vec<(String, String)>,
+}
+
+impl ExportDiagrams {
+    /// `content` with each drawable svg block replaced by an image link to
+    /// its own file. Blocks that won't sanitize stay as code.
+    fn link(&mut self, content: &str) -> String {
+        markdown::replace_svg_blocks(content, |block| {
+            let svg = svg::standalone(&block.source)?;
+            let name = format!("diagram-{}.svg", self.files.len() + 1);
+            let link = format!("![Diagram](<{}/{name}>)\n", self.dir);
+            self.files.push((name, svg));
+            Some(link)
+        })
+    }
+}
+
+fn build_export_markdown(t: &TopicDetail, diagrams: &mut ExportDiagrams) -> String {
     let mut out = String::new();
     out.push_str(&format!("# {}\n\n", t.title));
     out.push_str(&format!(
@@ -1083,7 +1268,7 @@ fn build_export_markdown(t: &TopicDetail) -> String {
         if let Some(p) = &step.prompt {
             out.push_str(&format!("> *Steered: {}*\n\n", p.replace('\n', " ")));
         }
-        let mut content = step.content.clone();
+        let mut content = diagrams.link(&step.content);
         let notes: Vec<&SideNote> = t
             .side_notes
             .iter()
@@ -1102,7 +1287,7 @@ fn build_export_markdown(t: &TopicDetail) -> String {
                 .iter()
                 .map(|m| {
                     let who = if m.role == "user" { "Q" } else { "A" };
-                    format!("**{who}:** {}", m.content.replace('\n', " "))
+                    format!("**{who}:** {}", diagrams.link(&m.content).replace('\n', " "))
                 })
                 .collect::<Vec<_>>()
                 .join(" \u{2022} ");
@@ -1153,7 +1338,6 @@ pub async fn export_topic_markdown(
         let filename = format!("{}.md", sanitize_filename(&detail.title));
         (detail, filename)
     };
-    let md = build_export_markdown(&detail);
     let path = tauri::async_runtime::spawn_blocking(move || {
         rfd::FileDialog::new()
             .set_title("Export topic as Markdown")
@@ -1163,14 +1347,27 @@ pub async fn export_topic_markdown(
     })
     .await
     .map_err(|e| CmdError::new("io", e.to_string()))?;
+    let Some(p) = path else { return Ok(None) };
 
-    match path {
-        Some(p) => {
-            std::fs::write(&p, md)?;
-            Ok(Some(p.display().to_string()))
+    // Diagrams go in a folder named after the file the user actually chose.
+    let stem = p
+        .file_stem()
+        .map(|s| s.to_string_lossy().into_owned())
+        .unwrap_or_else(|| "topic".to_string());
+    let mut diagrams = ExportDiagrams {
+        dir: format!("{stem}-diagrams"),
+        files: Vec::new(),
+    };
+    let md = build_export_markdown(&detail, &mut diagrams);
+    std::fs::write(&p, md)?;
+    if !diagrams.files.is_empty() {
+        let dir = p.with_file_name(&diagrams.dir);
+        std::fs::create_dir_all(&dir)?;
+        for (name, svg) in &diagrams.files {
+            std::fs::write(dir.join(name), svg)?;
         }
-        None => Ok(None),
     }
+    Ok(Some(p.display().to_string()))
 }
 
 #[tauri::command]

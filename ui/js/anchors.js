@@ -3,10 +3,20 @@
 // Range.toString()). The quoted_text snapshot allows re-anchoring by search
 // if content is edited or regenerated (§7 of the design doc).
 
+/** Text nodes under root, skipping diagrams: their labels aren't prose. */
+function textWalker(root) {
+  return document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
+    acceptNode: (n) => {
+      if (n.nodeType === Node.TEXT_NODE) return NodeFilter.FILTER_ACCEPT;
+      return n.classList?.contains('diagram') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_SKIP;
+    },
+  });
+}
+
 /** Concatenated text-node content of an element. */
 export function plainText(root) {
   let out = '';
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const walker = textWalker(root);
   let n;
   while ((n = walker.nextNode())) out += n.nodeValue;
   return out;
@@ -23,14 +33,29 @@ export function selectionOffsets(containerEl) {
   if (!containerEl.contains(range.startContainer) || !containerEl.contains(range.endContainer)) {
     return null;
   }
-  const pre = document.createRange();
-  pre.selectNodeContents(containerEl);
-  pre.setEnd(range.startContainer, range.startOffset);
-  const raw = range.toString();
+  const rawStart = plainOffset(containerEl, range.startContainer, range.startOffset);
+  const rawEnd = plainOffset(containerEl, range.endContainer, range.endOffset);
+  const raw = plainText(containerEl).slice(rawStart, rawEnd);
   const text = raw.trim();
   if (!text) return null;
-  const start = pre.toString().length + (raw.length - raw.trimStart().length);
+  const start = rawStart + (raw.length - raw.trimStart().length);
   return { start, end: start + text.length, text };
+}
+
+/** Plain-text offset of a DOM boundary point within root. */
+function plainOffset(root, container, offset) {
+  const before = document.createRange();
+  before.setStart(root, 0);
+  before.setEnd(container, offset);
+  let pos = 0;
+  const walker = textWalker(root);
+  let node;
+  while ((node = walker.nextNode())) {
+    if (node === container) return pos + offset;
+    if (!before.intersectsNode(node)) break;
+    pos += node.nodeValue.length;
+  }
+  return pos;
 }
 
 const BLOCK_TAGS = /^(P|DIV|UL|OL|LI|PRE|BLOCKQUOTE|TABLE|THEAD|TBODY|TFOOT|TR|TH|TD|H[1-6]|HR)$/;
@@ -53,7 +78,7 @@ export function wrapPlainRange(root, start, end, className, dataset = {}) {
   if (end <= start) return [];
   const segments = [];
   let pos = 0;
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const walker = textWalker(root);
   let node;
   while ((node = walker.nextNode())) {
     const len = node.nodeValue.length;
@@ -111,7 +136,7 @@ export function clonePlainRange(root, start, end) {
   const range = document.createRange();
   let pos = 0;
   let started = false;
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const walker = textWalker(root);
   let node;
   while ((node = walker.nextNode())) {
     const len = node.nodeValue.length;

@@ -108,6 +108,9 @@ pub struct Settings {
     pub step_size: String,
     #[serde(default = "default_theme")]
     pub theme: String,
+    /// Experimental: let the model draw SVG diagrams (and review them).
+    #[serde(default)]
+    pub diagrams: bool,
 }
 
 fn default_model() -> String {
@@ -126,6 +129,7 @@ impl Default for Settings {
             model: default_model(),
             step_size: default_step_size(),
             theme: default_theme(),
+            diagrams: false,
         }
     }
 }

@@ -300,6 +300,7 @@ export function buildGraph() {
 function stepSnippet(step) {
   const tmp = document.createElement('div');
   tmp.innerHTML = step.html;
+  tmp.querySelectorAll('.diagram').forEach((d) => d.remove());
   return truncate(tmp.textContent.trim().replace(/\s+/g, ' '), 110);
 }
 

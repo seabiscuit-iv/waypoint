@@ -103,7 +103,7 @@ function enterApp() {
 
 export function openSettings() {
   const body = el('div', {});
-  body.append(connectionSection(), modelSection(), stepSizeSection(), themeSection(), usageSection(), dataSection());
+  body.append(connectionSection(), modelSection(), stepSizeSection(), themeSection(), experimentalSection(), usageSection(), dataSection());
   openModal({ title: 'Settings', body, wide: true });
 }
 
@@ -255,6 +255,18 @@ function themeSection() {
   };
   render();
   return sectionEl('Appearance', seg);
+}
+
+function experimentalSection() {
+  const box = el('input', { type: 'checkbox' });
+  box.checked = !!state.settings.diagrams;
+  box.addEventListener('change', async () => {
+    await saveSettings({ diagrams: box.checked });
+    box.checked = !!state.settings.diagrams;
+  });
+  return sectionEl('Experimental',
+    el('label', { class: 'set-check' }, box, el('span', { text: 'Diagrams' })),
+    el('div', { class: 'set-note', text: 'Lets Waypoint draw diagrams in steps and side notes. Each diagram is rendered and checked by the model before it appears, which adds a request and a few seconds per diagram.' }));
 }
 
 function usageSection() {

@@ -104,6 +104,9 @@ function stepTimeLabel(step) {
 function refreshStepContentEl(stepEl, step) {
   const contentEl = stepEl.querySelector('.step-content');
   contentEl.innerHTML = step.html;
+  if (state.reviewingSteps.has(step.id)) {
+    contentEl.querySelectorAll('.diagram').forEach((d) => d.replaceWith(el('div', { class: 'diagram-pending' })));
+  }
   notes.applyMarks(stepEl, step);
 }
 
@@ -395,6 +398,7 @@ function onDone(payload) {
   state.spineGen = null;
   // Drop any queued frame — it would clobber the final render below.
   resetStreamBuffer();
+  if (payload.reviewing) state.reviewingSteps.add(payload.step.id);
 
   if (!state.topic || state.topic.id !== payload.topic_id) {
     refreshTopicList();
@@ -563,6 +567,9 @@ function enterEdit(stepId) {
     editor.remove();
     prevChildren.forEach((c) => { c.hidden = false; });
     stepEl.classList.remove('editing');
+    // A diagram review may have finished while the editor was open.
+    const current = findStep(stepId);
+    if (current) refreshStepContentEl(stepEl, current);
   }
 }
 

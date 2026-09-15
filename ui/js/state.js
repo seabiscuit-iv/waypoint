@@ -3,7 +3,7 @@
 
 export const state = {
   auth: { configured: false, masked_key: null },
-  settings: { model: 'claude-opus-5', step_size: 'standard', theme: 'system' },
+  settings: { model: 'claude-opus-5', step_size: 'standard', theme: 'system', diagrams: false },
   topics: [],          // TopicSummary[]
   currentTopicId: null,
   topic: null,         // TopicDetail of the open topic
@@ -14,6 +14,8 @@ export const state = {
   spineGen: null,      // { genId, stepId, kind: 'spine'|'regen', steering, originalHtml? }
   noteGen: null,       // { genId, noteId }
   noteErrors: new Map(), // noteId -> error message (retryable)
+  reviewingSteps: new Set(), // stepIds whose diagrams are still being checked
+  reviewingMessages: new Set(), // side-note messageIds, likewise
 
   search: null,        // { query, matches, idx }
 };
