@@ -708,11 +708,14 @@ math mtext { font-family: var(--font-content); }
   background: var(--note-mark);
   color: inherit;
   border-bottom: 2px solid var(--note-dot);
-  border-radius: 2px;
-  padding: 0 1px;
   cursor: pointer;
   transition: background 0.15s ease;
 }
+.wp-mark.mark-start { padding-left: 1px; border-top-left-radius: 2px; border-bottom-left-radius: 2px; }
+.wp-mark.mark-end { padding-right: 1px; border-top-right-radius: 2px; border-bottom-right-radius: 2px; }
+/* display math: an inline mark would split around the block equation */
+.mark-block { display: inline-block; vertical-align: middle; }
+.wp-mark.mark-block { padding: 2px 4px; border-radius: 3px; }
 .wp-mark:hover { background: var(--note-mark-hover); }
 .wp-mark.pending { animation: mark-pulse 1.2s ease infinite; }
 @keyframes mark-pulse { 50% { background: var(--note-mark-hover); } }
@@ -722,7 +725,7 @@ math mtext { font-family: var(--font-content); }
   border-bottom: 1.5px dotted var(--note-dot);
   position: relative;
 }
-.wp-mark.resolved::after {
+.wp-mark.resolved.mark-end::after {
   content: "";
   display: inline-block;
   width: 6px; height: 6px;
@@ -731,6 +734,12 @@ math mtext { font-family: var(--font-content); }
   margin-left: 3px;
   vertical-align: super;
   font-size: 0;
+}
+.wp-mark.resolved.mark-block.mark-end::after {
+  position: absolute;
+  top: 0;
+  right: -9px;
+  margin-left: 0;
 }
 .wp-mark.open-note { background: var(--note-mark-hover); }
 

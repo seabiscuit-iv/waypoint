@@ -32,9 +32,20 @@ export function selectionOffsets(containerEl) {
   return { start, end: start + text.length, text };
 }
 
+const BLOCK_TAGS = /^(P|DIV|UL|OL|LI|PRE|BLOCKQUOTE|TABLE|THEAD|TBODY|TFOOT|TR|TH|TD|H[1-6]|HR)$/;
+
+function isBlockGap(node) {
+  if (node.nodeValue.trim()) return false;
+  const inline = (sib) => sib && (sib.nodeType === Node.TEXT_NODE ||
+    !(BLOCK_TAGS.test(sib.nodeName) || sib.classList?.contains('math-block')));
+  return !inline(node.previousSibling) && !inline(node.nextSibling);
+}
+
 /**
  * Wraps the plain-text range [start, end) in <mark> elements — one per
  * intersected text node, so markup boundaries are never violated.
+ * Math is wrapped whole rather than per token, and whitespace between block
+ * elements is skipped. The first and last marks get mark-start / mark-end.
  * Returns the created marks.
  */
 export function wrapPlainRange(root, start, end, className, dataset = {}) {
@@ -48,9 +59,14 @@ export function wrapPlainRange(root, start, end, className, dataset = {}) {
     const nodeStart = pos;
     const nodeEnd = pos + len;
     if (nodeEnd > start && nodeStart < end) {
-      const s = Math.max(0, start - nodeStart);
-      const e = Math.min(len, end - nodeStart);
-      if (e > s) segments.push({ node, s, e });
+      const math = node.parentElement?.closest('math');
+      if (math) {
+        if (segments[segments.length - 1]?.node !== math) segments.push({ node: math });
+      } else if (!isBlockGap(node)) {
+        const s = Math.max(0, start - nodeStart);
+        const e = Math.min(len, end - nodeStart);
+        if (e > s) segments.push({ node, s, e });
+      }
     }
     pos = nodeEnd;
     if (pos >= end) break;
@@ -58,10 +74,17 @@ export function wrapPlainRange(root, start, end, className, dataset = {}) {
   const marks = [];
   for (const { node, s, e } of segments) {
     const range = document.createRange();
-    range.setStart(node, s);
-    range.setEnd(node, e);
+    if (s === undefined) {
+      range.selectNode(node);
+    } else {
+      range.setStart(node, s);
+      range.setEnd(node, e);
+    }
     const mark = document.createElement('mark');
     mark.className = className;
+    if (s === undefined && node.parentElement?.classList.contains('math-block')) {
+      mark.classList.add('mark-block');
+    }
     Object.assign(mark.dataset, dataset);
     try {
       range.surroundContents(mark);
@@ -69,6 +92,10 @@ export function wrapPlainRange(root, start, end, className, dataset = {}) {
     } catch {
       // A pathological partial-element range; skip this segment.
     }
+  }
+  if (marks.length) {
+    marks[0].classList.add('mark-start');
+    marks[marks.length - 1].classList.add('mark-end');
   }
   return marks;
 }
