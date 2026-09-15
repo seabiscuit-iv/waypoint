@@ -242,6 +242,7 @@ pub fn create_topic(
     state: State<'_, AppState>,
     title: String,
     seed_context: Option<String>,
+    prior_knowledge: Option<String>,
 ) -> Result<TopicSummary, CmdError> {
     // §5.1: topic creation is gated on a configured key, not just hidden
     // behind the onboarding screen.
@@ -251,9 +252,10 @@ pub fn create_topic(
         return Err(CmdError::new("invalid", "The topic needs a title."));
     }
     let seed = clean_opt(seed_context);
+    let prior = clean_opt(prior_knowledge);
     let id = new_id();
     let conn = lock_db(&state);
-    db::create_topic(&conn, &id, &title, seed.as_deref(), &now_iso())?;
+    db::create_topic(&conn, &id, &title, seed.as_deref(), prior.as_deref(), &now_iso())?;
     Ok(db::get_topic_summary(&conn, &id)?)
 }
 
@@ -769,6 +771,7 @@ pub fn advance_spine(
             &settings,
             &topic.title,
             topic.seed_context.as_deref(),
+            topic.prior_knowledge.as_deref(),
             &steps,
             &ledger,
             steering.as_deref(),
@@ -813,6 +816,7 @@ pub fn regenerate_step(
             &settings,
             &topic.title,
             topic.seed_context.as_deref(),
+            topic.prior_knowledge.as_deref(),
             &prior,
             &ledger,
             steering.as_deref(),

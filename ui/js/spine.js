@@ -18,6 +18,13 @@ export function renderTopicView() {
   qs('#empty-main').hidden = !!t;
   if (!t) return;
 
+  const priorEl = qs('#topic-prior');
+  priorEl.hidden = !t.prior_knowledge;
+  priorEl.textContent = '';
+  if (t.prior_knowledge) {
+    priorEl.append(el('b', { text: 'Starting from: ' }), t.prior_knowledge);
+  }
+
   const seedEl = qs('#topic-seed');
   if (t.seed_context) {
     seedEl.hidden = false;

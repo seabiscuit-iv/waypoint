@@ -17,6 +17,8 @@ const MAX_HISTORY_STEPS: usize = 24;
 /// SEED_BUDGET_CHARS in ui/js/views/topics.js.
 const MAX_SEED_CHARS: usize = 200_000;
 const MAX_EXCERPT_CHARS: usize = 6000;
+/// Kept in sync with PRIOR_KNOWLEDGE_MAX_CHARS in ui/js/views/topics.js.
+const MAX_PRIOR_KNOWLEDGE_CHARS: usize = 4000;
 
 /// Cheap model used for concept-ledger extraction and the key-test ping.
 pub const LEDGER_MODEL: &str = "claude-haiku-4-5";
@@ -71,12 +73,19 @@ const MIN_CACHEABLE_SEED_CHARS: usize = 4000;
 fn spine_system(
     title: &str,
     seed: Option<&str>,
+    prior_knowledge: Option<&str>,
     size_line: &str,
     ledger: &[String],
 ) -> Vec<SystemBlock> {
     let mut s = String::new();
     s.push_str("You are Waypoint, a tutor that builds understanding one deliberate step at a time.\n\n");
     s.push_str(&format!("Topic being learned: {title}\n"));
+
+    if let Some(prior) = prior_knowledge {
+        s.push_str("\nThe learner described what they already understand. Start the path from there: do not teach these foundations from scratch, pitch the first steps at this level, and build on what they know by name. If the description is vague, assume only what it clearly states.\n<learner_background>\n");
+        s.push_str(&truncate_chars(prior, MAX_PRIOR_KNOWLEDGE_CHARS));
+        s.push_str("\n</learner_background>\n");
+    }
 
     let mut cacheable = false;
     if let Some(seed) = seed {
@@ -139,6 +148,7 @@ pub fn build_spine_request(
     settings: &Settings,
     title: &str,
     seed: Option<&str>,
+    prior_knowledge: Option<&str>,
     steps: &[SpineStep],
     ledger: &[String],
     steering: Option<&str>,
@@ -151,7 +161,7 @@ pub fn build_spine_request(
     MessagesRequest {
         model: settings.model.clone(),
         max_tokens,
-        system: spine_system(title, seed, size_line, ledger),
+        system: spine_system(title, seed, prior_knowledge, size_line, ledger),
         messages,
         effort: effort_for(&settings.model, "medium"),
     }
@@ -161,6 +171,7 @@ pub fn build_regen_request(
     settings: &Settings,
     title: &str,
     seed: Option<&str>,
+    prior_knowledge: Option<&str>,
     prior_steps: &[SpineStep],
     ledger: &[String],
     steering: Option<&str>,
@@ -179,7 +190,7 @@ pub fn build_regen_request(
     MessagesRequest {
         model: settings.model.clone(),
         max_tokens,
-        system: spine_system(title, seed, size_line, ledger),
+        system: spine_system(title, seed, prior_knowledge, size_line, ledger),
         messages,
         effort: effort_for(&settings.model, "medium"),
     }

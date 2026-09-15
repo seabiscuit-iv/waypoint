@@ -82,7 +82,23 @@ fn migrate(conn: &Connection) -> rusqlite::Result<()> {
         CREATE INDEX IF NOT EXISTS idx_note_msgs    ON side_note_messages(side_note_id, position);
         CREATE INDEX IF NOT EXISTS idx_ledger_topic ON concept_ledger(topic_id);
         "#,
-    )
+    )?;
+    add_column_if_missing(conn, "topics", "prior_knowledge", "TEXT")
+}
+
+fn add_column_if_missing(
+    conn: &Connection,
+    table: &str,
+    column: &str,
+    decl: &str,
+) -> rusqlite::Result<()> {
+    let exists = conn
+        .prepare(&format!("SELECT 1 FROM pragma_table_info('{table}') WHERE name = ?1"))?
+        .exists(params![column])?;
+    if !exists {
+        conn.execute_batch(&format!("ALTER TABLE {table} ADD COLUMN {column} {decl};"))?;
+    }
+    Ok(())
 }
 
 // ---------------------------------------------------------------- topics --
@@ -123,7 +139,7 @@ pub fn get_topic_summary(conn: &Connection, id: &str) -> rusqlite::Result<TopicS
 
 pub fn get_topic_row(conn: &Connection, id: &str) -> rusqlite::Result<TopicRow> {
     conn.query_row(
-        "SELECT id, title, status, seed_context, created_at FROM topics WHERE id = ?1",
+        "SELECT id, title, status, seed_context, prior_knowledge, created_at FROM topics WHERE id = ?1",
         params![id],
         |r| {
             Ok(TopicRow {
@@ -131,7 +147,8 @@ pub fn get_topic_row(conn: &Connection, id: &str) -> rusqlite::Result<TopicRow> 
                 title: r.get(1)?,
                 status: r.get(2)?,
                 seed_context: r.get(3)?,
-                created_at: r.get(4)?,
+                prior_knowledge: r.get(4)?,
+                created_at: r.get(5)?,
             })
         },
     )
@@ -142,12 +159,13 @@ pub fn create_topic(
     id: &str,
     title: &str,
     seed_context: Option<&str>,
+    prior_knowledge: Option<&str>,
     now: &str,
 ) -> rusqlite::Result<()> {
     conn.execute(
-        "INSERT INTO topics (id, title, status, position, seed_context, created_at, updated_at) \
-         VALUES (?1, ?2, 'learning', COALESCE((SELECT MAX(position) + 1 FROM topics), 0), ?3, ?4, ?4)",
-        params![id, title, seed_context, now],
+        "INSERT INTO topics (id, title, status, position, seed_context, prior_knowledge, created_at, updated_at) \
+         VALUES (?1, ?2, 'learning', COALESCE((SELECT MAX(position) + 1 FROM topics), 0), ?3, ?4, ?5, ?5)",
+        params![id, title, seed_context, prior_knowledge, now],
     )?;
     Ok(())
 }
@@ -197,6 +215,7 @@ pub fn get_topic_detail(conn: &Connection, id: &str) -> rusqlite::Result<TopicDe
         title: row.title,
         status: row.status,
         seed_context: row.seed_context,
+        prior_knowledge: row.prior_knowledge,
         created_at: row.created_at,
     })
 }
@@ -211,15 +230,15 @@ pub fn duplicate_topic(
     let tx = conn.transaction()?;
     let new_topic_id = Uuid::new_v4().to_string();
 
-    let (title, status, seed): (String, String, Option<String>) = tx.query_row(
-        "SELECT title, status, seed_context FROM topics WHERE id = ?1",
+    let (title, status, seed, prior): (String, String, Option<String>, Option<String>) = tx.query_row(
+        "SELECT title, status, seed_context, prior_knowledge FROM topics WHERE id = ?1",
         params![src_id],
-        |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+        |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
     )?;
     tx.execute(
-        "INSERT INTO topics (id, title, status, position, seed_context, created_at, updated_at) \
-         VALUES (?1, ?2, ?3, COALESCE((SELECT MAX(position) + 1 FROM topics), 0), ?4, ?5, ?5)",
-        params![new_topic_id, format!("{title} (copy)"), status, seed, now],
+        "INSERT INTO topics (id, title, status, position, seed_context, prior_knowledge, created_at, updated_at) \
+         VALUES (?1, ?2, ?3, COALESCE((SELECT MAX(position) + 1 FROM topics), 0), ?4, ?5, ?6, ?6)",
+        params![new_topic_id, format!("{title} (copy)"), status, seed, prior, now],
     )?;
 
     // Steps.

@@ -22,6 +22,8 @@ pub struct TopicRow {
     pub title: String,
     pub status: String,
     pub seed_context: Option<String>,
+    /// The learner's own description of what they already understand.
+    pub prior_knowledge: Option<String>,
     pub created_at: String,
 }
 
@@ -90,6 +92,7 @@ pub struct TopicDetail {
     pub title: String,
     pub status: String,
     pub seed_context: Option<String>,
+    pub prior_knowledge: Option<String>,
     pub created_at: String,
     pub steps: Vec<SpineStep>,
     pub side_notes: Vec<SideNote>,

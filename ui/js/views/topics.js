@@ -169,6 +169,8 @@ export async function exportCurrent() {
 // Mirrors MAX_SEED_CHARS in prompts.rs — anything past this is trimmed off
 // before the seed reaches the model, so the modal says so up front.
 const SEED_BUDGET_CHARS = 200000;
+// Mirrors MAX_PRIOR_KNOWLEDGE_CHARS in prompts.rs.
+const PRIOR_KNOWLEDGE_MAX_CHARS = 4000;
 
 /** Free-text notes first, then each document under its own filename header. */
 function buildSeed(typedNotes, attached) {
@@ -218,6 +220,12 @@ export function openNewTopicModal() {
     placeholder: 'What do you want to learn? e.g. “ReSTIR”, “Rust async”…',
     spellcheck: 'false',
   });
+  const priorTa = el('textarea', {
+    rows: '3',
+    maxlength: String(PRIOR_KNOWLEDGE_MAX_CHARS),
+    placeholder: 'Optional. e.g. “I already understand path tracing and Monte Carlo integration, but I’ve never worked with resampling.”',
+  });
+  priorTa.addEventListener('input', () => autoGrow(priorTa));
   const seedTa = el('textarea', {
     rows: '5',
     placeholder: 'Optional. Paste a paper abstract, notes, or docs. The first steps will be grounded in it.',
@@ -297,6 +305,10 @@ export function openNewTopicModal() {
       titleInput,
       el('div', { class: 'sub', text: 'One topic = one learning path. Keep it focused.' })),
     el('div', { class: 'field' },
+      el('label', { text: 'What you already know (optional)' }),
+      priorTa,
+      el('div', { class: 'sub', text: 'A few sentences on where your understanding is now, so Waypoint starts at your level instead of from scratch.' })),
+    el('div', { class: 'field' },
       el('label', { text: 'Seed context (optional)' }),
       seedTa,
       el('div', { class: 'sub', text: 'PDF, Word, Markdown, plain text and source files. The first steps are grounded in whatever you add.' }),
@@ -318,7 +330,11 @@ export function openNewTopicModal() {
     }
     createBtn.disabled = true;
     try {
-      const summary = await api.createTopic(title, buildSeed(seedTa.value, attached) || null);
+      const summary = await api.createTopic(
+        title,
+        buildSeed(seedTa.value, attached) || null,
+        priorTa.value.trim() || null,
+      );
       m.close();
       await refreshTopicList();
       await selectTopic(summary.id);

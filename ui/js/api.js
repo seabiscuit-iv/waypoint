@@ -17,7 +17,8 @@ export const api = {
 
   // topics
   listTopics: () => invoke('list_topics'),
-  createTopic: (title, seedContext) => invoke('create_topic', { title, seedContext: seedContext ?? null }),
+  createTopic: (title, seedContext, priorKnowledge) =>
+    invoke('create_topic', { title, seedContext: seedContext ?? null, priorKnowledge: priorKnowledge ?? null }),
   getTopic: (topicId) => invoke('get_topic', { topicId }),
   renameTopic: (topicId, title) => invoke('rename_topic', { topicId, title }),
   deleteTopic: (topicId) => invoke('delete_topic', { topicId }),

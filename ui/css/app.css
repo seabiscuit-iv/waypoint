@@ -564,6 +564,7 @@ kbd {
   margin-bottom: 20px;
 }
 .topic-seed b { color: var(--ink); }
+.topic-prior { white-space: pre-line; }
 
 .spine-intro {
   text-align: center;
