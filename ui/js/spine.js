@@ -1,7 +1,7 @@
 // The spine: linear steps, the "+" composer, streaming generation,
 // regenerate/edit/copy actions, and first-class inline error states.
 
-import { qs, el, icon, toast, toastErr, timeAgo, autoGrow, copyText, patchStreamHtml } from './util.js';
+import { qs, el, icon, toast, toastErr, timeAgo, autoGrow, copyText, patchStreamHtml, modKey } from './util.js';
 import { api } from './api.js';
 import { state, findStep, drainEarlyEvents } from './state.js';
 import * as notes from './views/notes.js';
@@ -175,7 +175,7 @@ export function initSpine() {
   goBtn.addEventListener('click', () => submitComposer());
   input.addEventListener('input', () => autoGrow(input));
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey && !modKey(e)) {
       e.preventDefault();
       submitComposer();
     } else if (e.key === 'Escape') {
@@ -221,9 +221,11 @@ async function submitComposer() {
   await advance(input.value.trim() || null);
 }
 
+let advancing = false;
+
 /** Advance the spine (Ctrl+Enter path uses steering=null unless the composer is open). */
 export async function advance(steering) {
-  if (!state.topic) return;
+  if (!state.topic || advancing) return;
   if (state.spineGen) {
     toast('A step is already being generated.', { error: true });
     return;
@@ -232,6 +234,7 @@ export async function advance(steering) {
     toast('You’re offline — can’t generate right now.', { error: true });
     return;
   }
+  advancing = true;
   try {
     const res = await api.advanceSpine(state.topic.id, steering);
     qs('#composer-input').value = '';
@@ -240,6 +243,8 @@ export async function advance(steering) {
     drainEarlyEvents(res.gen_id, handleGenEvent);
   } catch (e) {
     toastErr(e);
+  } finally {
+    advancing = false;
   }
 }
 
