@@ -26,9 +26,10 @@ export function selectionOffsets(containerEl) {
   const pre = document.createRange();
   pre.selectNodeContents(containerEl);
   pre.setEnd(range.startContainer, range.startOffset);
-  const start = pre.toString().length;
-  const text = range.toString();
-  if (!text.trim()) return null;
+  const raw = range.toString();
+  const text = raw.trim();
+  if (!text) return null;
+  const start = pre.toString().length + (raw.length - raw.trimStart().length);
   return { start, end: start + text.length, text };
 }
 
@@ -98,4 +99,34 @@ export function wrapPlainRange(root, start, end, className, dataset = {}) {
     marks[marks.length - 1].classList.add('mark-end');
   }
   return marks;
+}
+
+/**
+ * A copy of the rendered markup covering the plain-text range [start, end),
+ * widened to whole equations where the range starts or ends inside math.
+ * Returns a DocumentFragment, or null if the range is out of bounds.
+ */
+export function clonePlainRange(root, start, end) {
+  if (end <= start) return null;
+  const range = document.createRange();
+  let pos = 0;
+  let started = false;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let node;
+  while ((node = walker.nextNode())) {
+    const len = node.nodeValue.length;
+    const math = node.parentElement?.closest('math');
+    if (!started && pos + len > start) {
+      if (math) range.setStartBefore(math);
+      else range.setStart(node, start - pos);
+      started = true;
+    }
+    if (started && pos + len >= end) {
+      if (math) range.setEndAfter(math);
+      else range.setEnd(node, end - pos);
+      return range.cloneContents();
+    }
+    pos += len;
+  }
+  return null;
 }

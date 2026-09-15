@@ -6,7 +6,7 @@
 import { qs, el, icon, toast, toastErr, autoGrow, truncate, confirmModal, patchStreamHtml } from '../util.js';
 import { api } from '../api.js';
 import { state, findNote, findStep, notesForStep, drainEarlyEvents } from '../state.js';
-import { selectionOffsets, plainText, wrapPlainRange } from '../anchors.js';
+import { selectionOffsets, plainText, wrapPlainRange, clonePlainRange } from '../anchors.js';
 import * as spine from '../spine.js';
 import * as topicsView from './topics.js';
 import { refreshTopicList } from '../nav.js';
@@ -212,6 +212,28 @@ export function closePanel() {
   }
 }
 
+function renderQuote(quoteEl, stepId, start, end, text) {
+  quoteEl.textContent = '';
+  const step = findStep(stepId);
+  if (step) {
+    const root = document.createElement('div');
+    root.innerHTML = step.html;
+    const plain = plainText(root);
+    if (plain.slice(start, end) !== text) {
+      start = plain.indexOf(text);
+      end = start + text.length;
+    }
+    if (start >= 0) {
+      const frag = clonePlainRange(root, start, end);
+      if (frag) {
+        quoteEl.append(frag);
+        return;
+      }
+    }
+  }
+  quoteEl.textContent = text;
+}
+
 function renderPanel() {
   const panel = qs('#note-panel');
   if (!panelCtx) {
@@ -229,7 +251,7 @@ function renderPanel() {
   thread.textContent = '';
 
   if (panelCtx.mode === 'create') {
-    quoteEl.textContent = panelCtx.text;
+    renderQuote(quoteEl, panelCtx.stepId, panelCtx.start, panelCtx.end, panelCtx.text);
     resolveBtn.hidden = true;
     deleteBtn.hidden = true;
     composer.hidden = false;
@@ -246,7 +268,7 @@ function renderPanel() {
     return;
   }
 
-  quoteEl.textContent = note.quoted_text;
+  renderQuote(quoteEl, note.anchor_step_id, note.start_offset, note.end_offset, note.quoted_text);
   resolveBtn.hidden = false;
   resolveBtn.textContent = note.resolved ? 'Reopen' : 'Resolve';
   deleteBtn.hidden = false;

@@ -977,6 +977,15 @@ math mtext { font-family: var(--font-content); }
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
 }
+/* the quote is a slice of rendered markdown: flatten its blocks into one run */
+.np-quote :is(p, ul, ol, li, blockquote, pre, h1, h2, h3, h4, h5, h6, table, thead, tbody, tr, th, td, .math-block) {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.np-quote math { font-style: normal; }
+.np-quote math[display="block"] { display: inline math; }
 .np-actions { display: flex; align-items: center; gap: 2px; flex: none; }
 
 .np-thread {
