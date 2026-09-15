@@ -10,7 +10,6 @@ import * as search from './views/search.js';
 import * as sidebar from './views/sidebar.js';
 import * as topicsView from './views/topics.js';
 import * as settings from './views/settings.js';
-import * as quiz from './views/quiz.js';
 import { selectTopic, refreshTopicList, toggleView } from './nav.js';
 
 async function boot() {
@@ -29,7 +28,6 @@ async function boot() {
   graph.initGraph();
   search.initSearch();
   topicsView.initTopics();
-  quiz.initQuiz();
   settings.initGate(enterApp);
 
   qs('#btn-settings').addEventListener('click', () => settings.openSettings());

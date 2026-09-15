@@ -22,7 +22,6 @@ const MAP = {
   keyboard: 'keyboard',
   offline: 'wifi-off',
   book: 'book-open',
-  quiz: 'circle-question-mark',
   export: 'download',
   'chevron-up': 'chevron-up',
   'chevron-down': 'chevron-down',
