@@ -2,7 +2,7 @@
 name = "waypoint"
 version = "0.1.0"
 edition = "2024"
-description = "Waypoint — AI-assisted graph-based learning"
+description = "Waypoint: AI-assisted graph-based learning"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

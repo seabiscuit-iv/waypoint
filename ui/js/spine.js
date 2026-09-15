@@ -24,7 +24,7 @@ export function renderTopicView() {
     seedEl.textContent = '';
     seedEl.append(
       el('b', { text: 'Seeded from imported text' }),
-      ` — the path is grounded in ${t.seed_context.length.toLocaleString()} characters of your source material.`,
+      `. The path is grounded in ${t.seed_context.length.toLocaleString()} characters of your source material.`,
     );
     seedEl.title = t.seed_context.slice(0, 600);
   } else {
@@ -231,7 +231,7 @@ export async function advance(steering) {
     return;
   }
   if (!state.online) {
-    toast('You’re offline — can’t generate right now.', { error: true });
+    toast('You’re offline and can’t generate right now.', { error: true });
     return;
   }
   advancing = true;
@@ -572,7 +572,7 @@ function toggleRegenForm(stepId) {
   }
   const input = el('input', {
     type: 'text',
-    placeholder: 'Optional new steering — e.g. “use an example instead”',
+    placeholder: 'Optional new steering, e.g. “use an example instead”',
     spellcheck: 'false',
   });
   const go = async () => {

@@ -157,7 +157,7 @@ export function showTopicMenu(t, x, y) {
       onClick: async () => {
         const ok = await confirmModal({
           title: 'Delete topic?',
-          message: `“${t.title}” — every step, side note, and its concept ledger will be permanently removed.`,
+          message: `Every step, side note, and concept ledger entry in “${t.title}” will be permanently removed.`,
           confirmLabel: 'Delete',
         });
         if (!ok) return;

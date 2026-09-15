@@ -59,7 +59,7 @@
 
       <div id="sidebar-empty" class="sidebar-empty" hidden>
         <p>No topics yet.</p>
-        <p class="dim">Start one — “ReSTIR”, “Rust async”, anything you want to actually understand.</p>
+        <p class="dim">Start one: “ReSTIR”, “Rust async”, anything you want to actually understand.</p>
       </div>
 
       <div class="sidebar-foot">
@@ -78,7 +78,7 @@
     <main id="main" class="main">
       <div id="offline-banner" class="offline-banner" hidden>
         <svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><use href="#i-offline"/></svg>
-        You’re offline — steps and side notes can’t be generated until the connection returns.
+        You’re offline. Steps and side notes can’t be generated until the connection returns.
       </div>
 
       <div id="empty-main" class="empty-main">
@@ -144,7 +144,7 @@
                     <span class="plus-label">Next step</span>
                   </button>
                   <div id="composer-input-wrap" class="composer-input-wrap" hidden>
-                    <textarea id="composer-input" rows="1" placeholder="Steer the next step — or leave empty and Waypoint decides"></textarea>
+                    <textarea id="composer-input" rows="1" placeholder="Steer the next step, or leave empty and Waypoint decides"></textarea>
                     <div class="composer-actions">
                       <span class="composer-hint"><kbd>Enter</kbd> generate · <kbd>Esc</kbd> close</span>
                       <button id="composer-go" class="btn btn-primary btn-sm">Generate</button>
@@ -176,13 +176,13 @@
               <h3>Concept ledger</h3>
               <button id="ledger-close" class="icon-btn sm"><svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
             </header>
-            <p class="drawer-sub">Everything covered so far — steps and resolved side notes. Waypoint feeds this into each new step so nothing gets re-taught.</p>
+            <p class="drawer-sub">Everything covered so far: steps and resolved side notes. Waypoint feeds this into each new step so nothing gets re-taught.</p>
             <div class="drawer-filter">
               <svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><use href="#i-search"/></svg>
               <input id="ledger-filter" type="text" placeholder="Filter concepts…" autocomplete="off" spellcheck="false" />
             </div>
             <div id="ledger-list" class="ledger-list"></div>
-            <div id="ledger-empty" class="drawer-empty" hidden>Nothing yet — concepts appear here as steps are generated.</div>
+            <div id="ledger-empty" class="drawer-empty" hidden>Nothing yet. Concepts appear here as steps are generated.</div>
           </aside>
 
           <aside id="note-panel" class="note-panel" hidden>
@@ -240,7 +240,7 @@
         </svg>
         <h1>Waypoint</h1>
       </div>
-      <p class="gate-tag">Learn anything one deliberate step at a time — a single spine of ideas, with side notes exactly where you need them.</p>
+      <p class="gate-tag">Learn anything one deliberate step at a time: a single spine of ideas, with side notes exactly where you need them.</p>
 
       <div class="gate-methods">
         <div class="gate-method is-disabled" aria-disabled="true">
@@ -253,7 +253,7 @@
 
         <div class="gate-method">
           <div class="gm-head"><h3>API key</h3></div>
-          <p>Paste an Anthropic API key from <span class="mono">console.anthropic.com</span>. It’s stored in <span id="gate-store-name">your system keyring</span> — never in a file.</p>
+          <p>Paste an Anthropic API key from <span class="mono">console.anthropic.com</span>. It’s stored in <span id="gate-store-name">your system keyring</span>, never in a file.</p>
           <div class="key-row">
             <input id="gate-key" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false"/>
             <button id="gate-save" class="btn btn-primary">Connect</button>

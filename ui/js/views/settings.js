@@ -6,14 +6,14 @@ import { api } from '../api.js';
 import { state } from '../state.js';
 
 const MODELS = [
-  { id: 'claude-opus-5', name: 'Claude Opus 5', sub: 'Deepest teaching quality — the default', price: '$5 / $25 per MTok' },
+  { id: 'claude-opus-5', name: 'Claude Opus 5', sub: 'Deepest teaching quality (the default)', price: '$5 / $25 per MTok' },
   { id: 'claude-sonnet-5', name: 'Claude Sonnet 5', sub: 'Near-Opus quality, faster and cheaper', price: '$3 / $15 per MTok' },
   { id: 'claude-haiku-4-5', name: 'Claude Haiku 4.5', sub: 'Fastest and most economical', price: '$1 / $5 per MTok' },
 ];
 
 const STEP_SIZES = [
-  { id: 'brief', label: 'Brief', sub: '1–2 short paragraphs per step — the tightest focus.' },
-  { id: 'standard', label: 'Standard', sub: '2–3 short paragraphs per step — the design default.' },
+  { id: 'brief', label: 'Brief', sub: '1–2 short paragraphs per step, for the tightest focus.' },
+  { id: 'standard', label: 'Standard', sub: '2–3 short paragraphs per step (the design default).' },
   { id: 'deep', label: 'Roomier', sub: '3–5 paragraphs per step, worked examples welcome.' },
 ];
 
@@ -81,7 +81,7 @@ async function connect() {
       setGateStatus('ok', res.message);
       setTimeout(() => enterApp(), 350);
     } else {
-      setGateStatus('err', res.message + ' The key was stored — fix it here or continue anyway.');
+      setGateStatus('err', res.message + ' The key was stored. Fix it here or continue anyway.');
       qs('#gate-anyway').hidden = false;
     }
   } catch (e) {
@@ -190,7 +190,7 @@ function connectionSection() {
     el('div', { class: 'field-row' }, keyInput, saveBtn),
     el('div', { class: 'btn-row', style: 'margin-top:8px' }, testBtn, removeBtn),
     feedback,
-    el('div', { class: 'set-note', text: 'Anthropic account sign-in isn’t available to third-party apps yet — an API key is the supported way to connect.' }));
+    el('div', { class: 'set-note', text: 'Anthropic account sign-in isn’t available to third-party apps yet, so an API key is the supported way to connect.' }));
 }
 
 function modelSection() {

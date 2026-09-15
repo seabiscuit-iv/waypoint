@@ -193,7 +193,7 @@ pub async fn test_api_key(
     match anthropic::complete_message(&state.http, &key, &req).await {
         Ok(_) => Ok(KeyTestResult {
             ok: true,
-            message: "Key verified \u{2014} connected to the Anthropic API.".to_string(),
+            message: "Key verified. Connected to the Anthropic API.".to_string(),
         }),
         Err(e) => Ok(KeyTestResult {
             ok: false,
@@ -1067,7 +1067,7 @@ fn build_export_markdown(t: &TopicDetail) -> String {
     let mut out = String::new();
     out.push_str(&format!("# {}\n\n", t.title));
     out.push_str(&format!(
-        "*A Waypoint learning path \u{2014} exported {}.*\n\n",
+        "*A Waypoint learning path, exported {}.*\n\n",
         Utc::now().format("%Y-%m-%d")
     ));
 
@@ -1103,7 +1103,7 @@ fn build_export_markdown(t: &TopicDetail) -> String {
                 .collect::<Vec<_>>()
                 .join(" \u{2022} ");
             footnotes.push(format!(
-                "[^{n}]: **\u{201c}{}\u{201d}** \u{2014} {thread}",
+                "[^{n}]: **\u{201c}{}\u{201d}**: {thread}",
                 note.quoted_text.replace('\n', " ")
             ));
         }

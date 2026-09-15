@@ -156,7 +156,7 @@ export function applyMarks(stepEl, step) {
         detachedWrap.append(el('button', {
           class: 'detached-chip',
           dataset: { noteId: note.id },
-          title: 'The highlighted text no longer appears in this step — the note is still here.',
+          title: 'The highlighted text no longer appears in this step, but the note is still here.',
         },
           el('span', { html: icon('chat') }),
           el('span', { text: '“' + truncate(note.quoted_text, 42) + '”' })));
@@ -258,7 +258,7 @@ function renderPanel() {
     input.placeholder = 'What do you want to ask about this?';
     qs('#np-send').textContent = 'Ask';
     thread.append(el('div', { class: 'np-resolved-banner' },
-      'A side note stays in the margin — it never interrupts the main path.'));
+      'A side note stays in the margin and never interrupts the main path.'));
     return;
   }
 
@@ -302,7 +302,7 @@ function renderPanel() {
   }
 
   if (note.resolved) {
-    thread.append(el('div', { class: 'np-resolved-banner', text: 'Resolved — collapsed to a dot in the text.' }));
+    thread.append(el('div', { class: 'np-resolved-banner', text: 'Resolved and collapsed to a dot in the text.' }));
   }
 
   composer.hidden = note.resolved || generating;
@@ -322,7 +322,7 @@ async function sendFromPanel() {
     return;
   }
   if (!state.online) {
-    toast('You’re offline — can’t generate right now.', { error: true });
+    toast('You’re offline and can’t generate right now.', { error: true });
     return;
   }
 

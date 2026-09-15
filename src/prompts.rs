@@ -36,7 +36,7 @@ fn effort_for(model: &str, level: &str) -> Option<String> {
 fn step_size(step_size: &str) -> (&'static str, u32) {
     match step_size {
         "brief" => (
-            "Keep the step to 1\u{2013}2 short paragraphs \u{2014} at most about 120 words.",
+            "Keep the step to 1\u{2013}2 short paragraphs, at most about 120 words.",
             3000,
         ),
         "deep" => (
@@ -44,7 +44,7 @@ fn step_size(step_size: &str) -> (&'static str, u32) {
             5000,
         ),
         _ => (
-            "Keep the step to 2\u{2013}3 short paragraphs \u{2014} at most about 220 words.",
+            "Keep the step to 2\u{2013}3 short paragraphs, at most about 220 words.",
             4000,
         ),
     }
@@ -93,6 +93,7 @@ fn spine_system(
     s.push_str("- Plain, precise language. Prefer concrete intuition before formalism.\n");
     s.push_str("- Use Markdown sparingly: bold for a newly introduced term, occasional lists or inline `code`. No headings, no horizontal rules, no closing summary.\n");
     s.push_str("- Write mathematics in LaTeX: $ \u{2026} $ for inline math, $$ \u{2026} $$ on its own lines for a displayed equation. Use it whenever a formula is clearer than prose, and define each symbol you introduce.\n");
+    s.push_str("- Never use em dashes (\u{2014}). Use commas, colons, parentheses, or separate sentences instead.\n");
     s.push_str("- Do not preview or promise future steps; never end with \"next we will\u{2026}\".\n");
     s.push_str("- Do not re-explain concepts already covered (listed below). Build on them by name instead.\n");
     s.push_str("- If the learner steers the step with an instruction, follow it while keeping the response one focused step.\n");
@@ -100,7 +101,7 @@ fn spine_system(
     let mut volatile = String::new();
     volatile.push_str("Concepts already covered (including ones clarified in side notes):\n");
     if ledger.is_empty() {
-        volatile.push_str("(none yet \u{2014} this is the beginning of the path)\n");
+        volatile.push_str("(none yet; this is the beginning of the path)\n");
     } else {
         for label in ledger {
             volatile.push_str(&format!("- {label}\n"));
@@ -167,7 +168,7 @@ pub fn build_regen_request(
 ) -> MessagesRequest {
     let (size_line, max_tokens) = step_size(&settings.step_size);
     let mut messages = history_messages(prior_steps);
-    let mut ask = String::from("Regenerate this step \u{2014} the previous version missed the mark.");
+    let mut ask = String::from("Regenerate this step. The previous version missed the mark.");
     if let Some(s) = steering {
         ask.push_str(&format!(" Instruction: {s}"));
     }
@@ -193,7 +194,8 @@ pub fn build_side_note_request(
 ) -> MessagesRequest {
     let mut system = String::new();
     system.push_str("You are Waypoint's side-note assistant. The learner is reading a lesson step and highlighted a specific phrase to ask about it.\n\n");
-    system.push_str("Answer only the learner's question about the highlighted text: conversational and concise, one short paragraph unless they explicitly ask for more. Stay scoped to the clarification \u{2014} do not continue the lesson, introduce the next concept, or restate the whole step.\n\n");
+    system.push_str("Answer only the learner's question about the highlighted text: conversational and concise, one short paragraph unless they explicitly ask for more. Stay scoped to the clarification: do not continue the lesson, introduce the next concept, or restate the whole step.\n\n");
+    system.push_str("Never use em dashes (\u{2014}). Use commas, colons, parentheses, or separate sentences instead.\n\n");
     system.push_str("Write mathematics in LaTeX: $ \u{2026} $ for inline math, $$ \u{2026} $$ on its own lines for a displayed equation.\n\n");
     system.push_str(&format!("Topic being learned: {topic_title}\n\n"));
     system.push_str("The lesson step the learner is reading:\n<step>\n");

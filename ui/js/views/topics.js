@@ -117,13 +117,13 @@ export function renderLedger() {
   const empty = qs('#ledger-empty');
   empty.hidden = shown.length > 0;
   empty.textContent = t.ledger.length === 0
-    ? 'Nothing yet — concepts appear here as steps are generated.'
+    ? 'Nothing yet. Concepts appear here as steps are generated.'
     : `No concept matches “${q}”.`;
 
   for (const entry of shown) {
     list.append(el('button', {
       class: 'ledger-chip' + (entry.source_kind === 'side_note' ? ' from-note' : ''),
-      title: entry.source_kind === 'side_note' ? 'Learned in a side note — click to open' : 'Taught in a step — click to jump',
+      title: entry.source_kind === 'side_note' ? 'Learned in a side note (click to open)' : 'Taught in a step (click to jump)',
       onclick: () => jumpToSource(entry),
     },
       el('span', { class: 'lc-dot' }),
@@ -220,7 +220,7 @@ export function openNewTopicModal() {
   });
   const seedTa = el('textarea', {
     rows: '5',
-    placeholder: 'Optional — paste a paper abstract, notes, or docs. The first steps will be grounded in it.',
+    placeholder: 'Optional. Paste a paper abstract, notes, or docs. The first steps will be grounded in it.',
   });
   seedTa.addEventListener('input', () => autoGrow(seedTa));
 
@@ -251,7 +251,7 @@ export function openNewTopicModal() {
     } else if (total > SEED_BUDGET_CHARS) {
       budgetNote.className = 'attach-budget over';
       budgetNote.textContent =
-        `${total.toLocaleString()} chars — only the first ${SEED_BUDGET_CHARS.toLocaleString()} are sent to the model. Trim it, or attach the most relevant sections.`;
+        `${total.toLocaleString()} chars, but only the first ${SEED_BUDGET_CHARS.toLocaleString()} are sent to the model. Trim it, or attach the most relevant sections.`;
     } else {
       budgetNote.className = 'attach-budget';
       budgetNote.textContent = `${total.toLocaleString()} chars of context`;
